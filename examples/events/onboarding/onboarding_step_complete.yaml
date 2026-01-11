@@ -1,0 +1,36 @@
+opentp: 0.5.0
+
+event:
+  key: onboarding::onboarding_step_complete
+
+  lifecycle:
+    status: active
+
+  taxonomy:
+    area: onboarding
+    event: onboarding_step_complete
+    action: User completes an onboarding step
+
+  payload:
+    platforms:
+      mobile:
+        active: 1.0.0
+        history:
+          1.0.0:
+            changes: []
+            schema:
+              application_id:
+                value: mobile-app
+              event_name:
+                value: onboarding_step_complete
+              event_category:
+                value: onboarding
+              step_number:
+                type: number
+                required: true
+              step_name:
+                type: string
+                required: true
+              is_skipped:
+                type: boolean
+                required: false

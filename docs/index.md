@@ -1,0 +1,103 @@
+# OpenTrackPlan Specification
+
+OpenTrackPlan is an open standard for describing tracking plans — a structured way to define, validate, and document analytics events.
+
+## Problem
+
+Analytics implementations often break down in communication:
+
+- Analysts describe events in Google Docs, Notion, or Confluence
+- Developers implement events "as they understood"
+- QA checks implementation "by eye"
+- Data diverges from expectations
+
+## Solution
+
+OpenTrackPlan provides a schema-first approach:
+
+1. **Define** events in YAML files with structured schemas
+2. **Validate** events against the specification
+3. **Generate** code, documentation, or exports
+4. **Collaborate** using version control
+
+## Core Concepts
+
+### Tracking Plan Structure
+
+```
+my-tracking-plan/
+├── opentp.yaml              # Main configuration
+├── events/
+│   ├── auth/
+│   │   ├── login.yaml
+│   │   └── signup.yaml
+│   └── dashboard/
+│       └── view.yaml
+└── dictionaries/
+    ├── taxonomy/
+    │   └── areas.yaml
+    └── data/
+        └── platforms.yaml
+```
+
+### Taxonomy vs Payload
+
+**Taxonomy** — event metadata for humans:
+- Folder organization and search
+- Human-readable descriptions
+- Team ownership
+
+**Payload** — data for analytics platforms:
+- What gets sent to Amplitude, GA, Mixpanel
+- Platform-specific schemas
+- Versioned history
+
+These are independent concepts — there's no automatic mapping between them.
+
+## Format Version
+
+Current specification version: **0.5.0**
+
+All OpenTrackPlan files declare their format version:
+
+```yaml
+opentp: 0.5.0
+```
+
+## File Types
+
+| File | Purpose | Schema |
+|------|---------|--------|
+| `opentp.yaml` | Main configuration | [opentp.schema.json](./schema/) |
+| `events/*.yaml` | Event definitions | [event.schema.json](./schema/events) |
+| `dictionaries/*.yaml` | Reusable value lists | [dict.schema.json](./schema/dictionaries) |
+
+## JSON Schemas
+
+All file formats have JSON schemas for validation and IDE autocompletion.
+
+Add this to your YAML files:
+
+```yaml
+# yaml-language-server: $schema=https://opentp.dev/schemas/opentp.schema.json
+```
+
+Schema URLs:
+
+| Schema | URL |
+|--------|-----|
+| Main config | `https://opentp.dev/schemas/opentp.schema.json` |
+| Events | `https://opentp.dev/schemas/event.schema.json` |
+| Dictionaries | `https://opentp.dev/schemas/dict.schema.json` |
+
+## Getting Started
+
+1. Create `opentp.yaml` in your project root
+2. Define your taxonomy and payload structure
+3. Create event files in the `events/` directory
+4. Use dictionaries for reusable value lists
+5. Validate with the [opentp CLI](https://github.com/opentrackplan/opentp-cli)
+
+## License
+
+Apache 2.0

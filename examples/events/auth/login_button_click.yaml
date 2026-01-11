@@ -1,0 +1,31 @@
+opentp: 0.5.0
+
+event:
+  key: auth::login_button_click
+
+  lifecycle:
+    status: active
+
+  taxonomy:
+    area: auth
+    event: login_button_click
+    action: User clicks the login button
+
+  payload:
+    platforms:
+      all:
+        active: 1.0.0
+        history:
+          1.0.0:
+            changes: []
+            schema:
+              application_id:
+                value: web-app
+              event_name:
+                value: login_button_click
+              event_category:
+                value: auth
+              auth_method:
+                type: string
+                enum: [email, google, github]
+                required: true

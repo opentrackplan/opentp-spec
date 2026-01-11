@@ -1,0 +1,8 @@
+opentp: 0.5.0
+
+dict:
+  type: string
+  values:
+    - web-app
+    - mobile-app
+    - admin-panel

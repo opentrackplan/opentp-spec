@@ -1,0 +1,69 @@
+opentp: 0.5.0
+
+info:
+  title: Example Tracking Plan
+  version: 1.0.0
+  description: Sample tracking plan for demonstration purposes
+  contact:
+    - Analytics Team <analytics@example.com>
+
+spec:
+  events:
+    key:
+      pattern: "{area | slug}::{event | slug}"
+
+    paths:
+      events:
+        root: /events
+        pattern: "{area}/{event}.yaml"
+      dictionaries:
+        root: /dictionaries
+        pattern: "{path}.yaml"
+
+    taxonomy:
+      area:
+        title: Area
+        type: string
+        dict: taxonomy/areas
+        required: true
+      event:
+        title: Event
+        type: string
+        required: true
+      action:
+        title: Action
+        type: string
+        description: Human-readable description of what triggers the event
+        required: true
+
+    payload:
+      platforms:
+        all: [web, ios, android]
+        mobile: [ios, android]
+      schema:
+        application_id:
+          type: string
+          dict: data/application_id
+          required: true
+        event_name:
+          type: string
+          required: true
+        event_category:
+          type: string
+          required: true
+        user_id:
+          type: string
+          required: false
+
+  transforms:
+    slug:
+      steps:
+        - step: lower
+        - step: trim
+        - step: replace
+          params:
+            pattern: " "
+            with: "_"
+        - step: truncate
+          params:
+            maxLen: 160

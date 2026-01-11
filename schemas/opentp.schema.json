@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/opentp.schema.json",
+  "$id": "https://opentp.dev/schemas/2025-06/opentp.schema.json",
   "title": "OpenTrackPlan Configuration",
   "description": "Schema for opentp.yaml - the main configuration file",
   "type": "object",

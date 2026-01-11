@@ -20,7 +20,7 @@ Analytics implementations often break down in communication:
 Create `opentp.yaml` in your project:
 
 ```yaml
-opentp: 0.5.0
+opentp: 2025-06
 
 info:
   title: My Tracking Plan
@@ -55,7 +55,7 @@ spec:
 Create an event in `events/auth/login.yaml`:
 
 ```yaml
-opentp: 0.5.0
+opentp: 2025-06
 
 event:
   key: auth::login
@@ -92,14 +92,14 @@ All file formats have JSON schemas for IDE validation:
 
 | Schema | URL |
 |--------|-----|
-| Main config | `https://opentp.dev/schemas/opentp.schema.json` |
-| Events | `https://opentp.dev/schemas/event.schema.json` |
-| Dictionaries | `https://opentp.dev/schemas/dict.schema.json` |
+| Main config | `https://opentp.dev/schemas/latest/opentp.schema.json` |
+| Events | `https://opentp.dev/schemas/latest/event.schema.json` |
+| Dictionaries | `https://opentp.dev/schemas/latest/dict.schema.json` |
 
 Add to your YAML files:
 
 ```yaml
-# yaml-language-server: $schema=https://opentp.dev/schemas/opentp.schema.json
+# yaml-language-server: $schema=https://opentp.dev/schemas/latest/opentp.schema.json
 ```
 
 ## Tools
@@ -112,7 +112,7 @@ See the [examples/](examples/) directory for a complete tracking plan example.
 
 ## Specification Version
 
-Current version: **0.5.0**
+Current version: **2025-06**
 
 ## Contributing
 

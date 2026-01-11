@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/event.schema.json",
+  "$id": "https://opentp.dev/schemas/2025-06/event.schema.json",
   "title": "OpenTrackPlan Event",
   "description": "Schema for OpenTrackPlan event files (.yaml). Note: taxonomy and payload fields are validated by CLI based on opentp.yaml",
   "type": "object",

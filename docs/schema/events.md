@@ -5,8 +5,8 @@ Event files define individual analytics events with taxonomy metadata and payloa
 ## Example
 
 ```yaml
-# yaml-language-server: $schema=https://opentp.dev/schemas/event.schema.json
-opentp: 0.5.0
+# yaml-language-server: $schema=https://opentp.dev/schemas/latest/event.schema.json
+opentp: 2025-06
 
 event:
   key: auth::login_button_click

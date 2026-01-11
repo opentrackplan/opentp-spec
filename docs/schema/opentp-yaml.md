@@ -5,7 +5,7 @@ The main configuration file defines your tracking plan structure, taxonomy, tran
 ## Minimal Example
 
 ```yaml
-opentp: 0.5.0
+opentp: 2025-06
 
 info:
   title: My Tracking Plan
@@ -43,7 +43,7 @@ spec:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `opentp` | string | Yes | Format version (e.g., "0.5.0") |
+| `opentp` | string | Yes | Format version (e.g., "2025-06") |
 | `info` | object | Yes | Project metadata |
 | `spec` | object | Yes | Tracking plan specification |
 

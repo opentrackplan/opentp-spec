@@ -56,12 +56,12 @@ These are independent concepts — there's no automatic mapping between them.
 
 ## Format Version
 
-Current specification version: **0.5.0**
+Current specification version: **2025-06**
 
 All OpenTrackPlan files declare their format version:
 
 ```yaml
-opentp: 0.5.0
+opentp: 2025-06
 ```
 
 ## File Types
@@ -79,16 +79,16 @@ All file formats have JSON schemas for validation and IDE autocompletion.
 Add this to your YAML files:
 
 ```yaml
-# yaml-language-server: $schema=https://opentp.dev/schemas/opentp.schema.json
+# yaml-language-server: $schema=https://opentp.dev/schemas/latest/opentp.schema.json
 ```
 
 Schema URLs:
 
 | Schema | URL |
 |--------|-----|
-| Main config | `https://opentp.dev/schemas/opentp.schema.json` |
-| Events | `https://opentp.dev/schemas/event.schema.json` |
-| Dictionaries | `https://opentp.dev/schemas/dict.schema.json` |
+| Main config | `https://opentp.dev/schemas/latest/opentp.schema.json` |
+| Events | `https://opentp.dev/schemas/latest/event.schema.json` |
+| Dictionaries | `https://opentp.dev/schemas/latest/dict.schema.json` |
 
 ## Getting Started
 

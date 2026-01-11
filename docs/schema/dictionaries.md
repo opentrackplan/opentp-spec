@@ -5,9 +5,9 @@ Dictionaries define allowed values that can be referenced across your tracking p
 ## Example
 
 ```yaml
-# yaml-language-server: $schema=https://opentp.dev/schemas/dict.schema.json
+# yaml-language-server: $schema=https://opentp.dev/schemas/latest/dict.schema.json
 # dictionaries/taxonomy/areas.yaml
-opentp: 0.5.0
+opentp: 2025-06
 
 dict:
   type: string
@@ -120,7 +120,7 @@ dictionaries/
 
 ```yaml
 # dictionaries/data/auth_methods.yaml
-opentp: 0.5.0
+opentp: 2025-06
 
 dict:
   type: string
@@ -135,7 +135,7 @@ dict:
 
 ```yaml
 # dictionaries/data/priority_levels.yaml
-opentp: 0.5.0
+opentp: 2025-06
 
 dict:
   type: number

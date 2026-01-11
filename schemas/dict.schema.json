@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/dict.schema.json",
+  "$id": "https://opentp.dev/schemas/2025-06/dict.schema.json",
   "title": "OpenTrackPlan Dictionary",
   "description": "Schema for OpenTrackPlan dictionary files (.yaml)",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2025-06/opentp.schema.json",
+  "$id": "https://opentp.dev/schemas/2025-12/opentp.schema.json",
   "title": "OpenTrackPlan Configuration",
   "description": "Schema for opentp.yaml - the main configuration file",
   "type": "object",
@@ -40,13 +40,27 @@
     "spec": {
       "type": "object",
       "description": "Specification",
-      "required": ["events"],
+      "required": ["paths", "events"],
       "additionalProperties": false,
       "properties": {
+        "paths": {
+          "type": "object",
+          "description": "File paths configuration",
+          "required": ["events"],
+          "additionalProperties": false,
+          "properties": {
+            "events": {
+              "$ref": "#/definitions/eventsPathConfig"
+            },
+            "dictionaries": {
+              "$ref": "#/definitions/dictionariesPathConfig"
+            }
+          }
+        },
         "events": {
           "type": "object",
           "description": "Events configuration",
-          "required": ["key", "paths", "taxonomy", "payload"],
+          "required": ["key", "taxonomy", "payload"],
           "additionalProperties": false,
           "properties": {
             "key": {
@@ -61,13 +75,6 @@
                 }
               }
             },
-            "paths": {
-              "type": "object",
-              "description": "File paths configuration",
-              "additionalProperties": {
-                "$ref": "#/definitions/pathConfig"
-              }
-            },
             "taxonomy": {
               "type": "object",
               "description": "Taxonomy fields definition",
@@ -78,12 +85,13 @@
             "payload": {
               "type": "object",
               "description": "Payload configuration",
-              "required": ["platforms", "schema"],
+              "required": ["targets", "schema"],
               "additionalProperties": false,
               "properties": {
-                "platforms": {
+                "targets": {
                   "type": "object",
-                  "description": "Platform definitions. 'all' is required",
+                  "description": "Target definitions. 'all' is required",
+                  "required": ["all"],
                   "additionalProperties": {
                     "type": "array",
                     "items": {
@@ -99,6 +107,9 @@
                   }
                 }
               }
+            },
+            "pii": {
+              "$ref": "#/definitions/piiConfig"
             }
           }
         },
@@ -108,61 +119,14 @@
           "additionalProperties": {
             "$ref": "#/definitions/transform"
           }
-        },
-        "validators": {
-          "type": "object",
-          "description": "External validators (webhooks)",
-          "additionalProperties": {
-            "$ref": "#/definitions/validator"
-          }
-        },
-        "generators": {
-          "type": "array",
-          "description": "Code generators configuration",
-          "items": {
-            "type": "object"
-          }
-        },
-        "extensions": {
-          "type": "object",
-          "description": "Custom extensions",
-          "additionalProperties": true
-        },
-        "external": {
-          "type": "object",
-          "description": "External resources configuration",
-          "additionalProperties": false,
-          "properties": {
-            "rules": {
-              "type": "array",
-              "description": "Paths to directories with custom validation rules",
-              "items": {
-                "type": "string"
-              }
-            },
-            "transforms": {
-              "type": "array",
-              "description": "Paths to directories with custom transform steps",
-              "items": {
-                "type": "string"
-              }
-            },
-            "generators": {
-              "type": "array",
-              "description": "Paths to directories with custom generators",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
         }
       }
     }
   },
   "definitions": {
-    "pathConfig": {
+    "eventsPathConfig": {
       "type": "object",
-      "description": "Path configuration",
+      "description": "Path configuration for event files",
       "required": ["root", "pattern"],
       "additionalProperties": false,
       "properties": {
@@ -173,6 +137,18 @@
         "pattern": {
           "type": "string",
           "description": "File name pattern"
+        }
+      }
+    },
+    "dictionariesPathConfig": {
+      "type": "object",
+      "description": "Path configuration for dictionary files",
+      "required": ["root"],
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "type": "string",
+          "description": "Root directory path"
         }
       }
     },
@@ -205,18 +181,15 @@
         },
         "enum": {
           "type": "array",
-          "description": "Inline list of allowed values",
-          "items": {
-            "type": "string"
-          }
+          "description": "Inline list of allowed values"
         },
         "dict": {
           "type": "string",
           "description": "Reference to dictionary (e.g., 'taxonomy/apps')"
         },
-        "rules": {
+        "checks": {
           "type": "object",
-          "description": "Validation rules for this field",
+          "description": "Validation checks for this field",
           "additionalProperties": true
         },
         "fragments": {
@@ -226,51 +199,271 @@
             "$ref": "#/definitions/taxonomyField"
           }
         }
-      }
-    },
-    "transformStep": {
-      "type": "object",
-      "description": "Transform step with uniform format: { step: 'name', params?: {...} }",
-      "required": ["step"],
-      "additionalProperties": false,
-      "properties": {
-        "step": {
-          "type": "string",
-          "description": "Step name: lower, upper, trim, replace, collapse, keep, to-camel-case, to-kebab, to-snake-case, to-underscore, transliterate, truncate"
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": ["enum", "dict"]
+          }
         },
-        "params": {
-          "type": "object",
-          "description": "Step parameters (varies by step type)"
+        {
+          "oneOf": [
+            {
+              "not": {
+                "required": ["enum"]
+              }
+            },
+            {
+              "required": ["enum"],
+              "properties": {
+                "type": { "const": "string" },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            {
+              "required": ["enum"],
+              "properties": {
+                "type": { "const": "number" },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "number" }
+                }
+              }
+            },
+            {
+              "required": ["enum"],
+              "properties": {
+                "type": { "const": "boolean" },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "boolean" }
+                }
+              }
+            }
+          ]
         }
-      }
+      ]
     },
-    "transform": {
+    "piiConfig": {
       "type": "object",
-      "description": "Transform definition with configurable steps",
+      "description": "PII metadata configuration for payload fields",
       "additionalProperties": false,
-      "required": ["steps"],
       "properties": {
-        "steps": {
-          "type": "array",
-          "description": "Transform steps",
-          "items": {
-            "$ref": "#/definitions/transformStep"
+        "kind": {
+          "$ref": "#/definitions/piiReservedFieldConfig"
+        },
+        "masker": {
+          "$ref": "#/definitions/piiReservedFieldConfig"
+        },
+        "schema": {
+          "type": "object",
+          "description": "Additional PII metadata fields (validated by tooling)",
+          "additionalProperties": {
+            "$ref": "#/definitions/piiMetaField"
           }
         }
       }
     },
-    "validator": {
+    "piiReservedFieldConfig": {
       "type": "object",
-      "description": "External validator configuration",
+      "description": "Configuration for reserved PII fields (pii.kind, pii.masker)",
+      "additionalProperties": false,
       "properties": {
-        "url": {
+        "title": {
           "type": "string",
-          "description": "Webhook URL"
+          "description": "Human-readable field name"
         },
-        "timeout": {
+        "description": {
           "type": "string",
-          "description": "Request timeout"
+          "description": "Field description"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this PII field is required when pii is present"
+        },
+        "enum": {
+          "type": "array",
+          "description": "Inline list of allowed values",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dict": {
+          "type": "string",
+          "description": "Reference to dictionary (e.g., 'governance/pii-kinds')"
+        },
+        "checks": {
+          "type": "object",
+          "description": "Validation checks for this field",
+          "additionalProperties": true
         }
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": ["enum", "dict"]
+          }
+        }
+      ]
+    },
+    "piiMetaField": {
+      "type": "object",
+      "description": "Additional PII metadata field definition",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Human-readable field name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Field description"
+        },
+        "type": {
+          "type": "string",
+          "description": "Data type",
+          "enum": ["string", "number", "boolean"]
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this field is required when pii is present"
+        },
+        "enum": {
+          "type": "array",
+          "description": "Inline list of allowed values"
+        },
+        "dict": {
+          "type": "string",
+          "description": "Reference to dictionary (e.g., 'governance/pii-owners')"
+        },
+        "checks": {
+          "type": "object",
+          "description": "Validation checks for this field",
+          "additionalProperties": true
+        }
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": ["enum", "dict"]
+          }
+        },
+        {
+          "oneOf": [
+            {
+              "not": {
+                "required": ["enum"]
+              }
+            },
+            {
+              "required": ["enum"],
+              "properties": {
+                "type": { "const": "string" },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            {
+              "required": ["enum"],
+              "properties": {
+                "type": { "const": "number" },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "number" }
+                }
+              }
+            },
+            {
+              "required": ["enum"],
+              "properties": {
+                "type": { "const": "boolean" },
+                "enum": {
+                  "type": "array",
+                  "items": { "type": "boolean" }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "transformStep": {
+      "description": "Transform step. Either a string step name (e.g. 'lower') or an object mapping step name to params (e.g. { replace: { from: ' ', to: '_' } }).",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Step name (built-in or custom)"
+        },
+        {
+          "type": "object",
+          "description": "Step with parameters: { <stepName>: <params> }",
+          "minProperties": 1,
+          "maxProperties": 1,
+          "oneOf": [
+            {
+              "required": ["replace"],
+              "additionalProperties": false,
+              "properties": {
+                "replace": {
+                  "$ref": "#/definitions/replaceStepParams"
+                }
+              }
+            },
+            {
+              "required": ["truncate"],
+              "additionalProperties": false,
+              "properties": {
+                "truncate": {
+                  "$ref": "#/definitions/truncateStepParams"
+                }
+              }
+            },
+            {
+              "not": {
+                "anyOf": [
+                  { "required": ["replace"] },
+                  { "required": ["truncate"] }
+                ]
+              },
+              "additionalProperties": true
+            }
+          ]
+        }
+      ]
+    },
+    "replaceStepParams": {
+      "type": "object",
+      "description": "Literal replace configuration",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "String to replace"
+        },
+        "to": {
+          "type": "string",
+          "description": "Replacement string"
+        }
+      }
+    },
+    "truncateStepParams": {
+      "type": "integer",
+      "description": "Maximum length",
+      "minimum": 1
+    },
+    "transform": {
+      "type": "array",
+      "description": "Transform pipeline steps",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/transformStep"
       }
     }
   }

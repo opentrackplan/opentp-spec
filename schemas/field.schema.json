@@ -1,9 +1,26 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2025-06/field.schema.json",
+  "$id": "https://opentp.dev/schemas/2025-12/field.schema.json",
   "title": "OpenTrackPlan Field",
   "description": "Field definition. Use 'value' for fixed values, 'enum' or 'dict' for allowed values",
   "type": "object",
+  "allOf": [
+    {
+      "not": {
+        "required": ["enum", "dict"]
+      }
+    },
+    {
+      "not": {
+        "required": ["enum", "value"]
+      }
+    },
+    {
+      "not": {
+        "required": ["dict", "value"]
+      }
+    }
+  ],
   "additionalProperties": false,
   "properties": {
     "title": {
@@ -34,10 +51,25 @@
     "value": {
       "description": "Fixed value for this field (string, number, or boolean)"
     },
-    "rules": {
+    "checks": {
       "type": "object",
-      "description": "Validation rules for this field",
+      "description": "Validation checks for this field",
       "additionalProperties": true
+    },
+    "pii": {
+      "type": "object",
+      "description": "PII metadata and masking configuration for this field",
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "PII kind identifier (reserved; configured in opentp.yaml)"
+        },
+        "masker": {
+          "type": "string",
+          "description": "Masker implementation id (reserved; configured in opentp.yaml)"
+        }
+      }
     }
   }
 }

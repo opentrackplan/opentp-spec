@@ -37,7 +37,7 @@ my-tracking-plan/
     ├── taxonomy/
     │   └── areas.yaml
     └── data/
-        └── platforms.yaml
+        └── application_id.yaml
 ```
 
 ### Taxonomy vs Payload
@@ -47,7 +47,7 @@ my-tracking-plan/
 - Human-readable descriptions
 - Team ownership
 
-**Payload** — data for analytics platforms:
+**Payload** — data for analytics targets:
 - What gets sent to Amplitude, GA, Mixpanel
 - Platform-specific schemas
 - Versioned history
@@ -56,21 +56,21 @@ These are independent concepts — there's no automatic mapping between them.
 
 ## Format Version
 
-Current specification version: **2025-06**
+Current specification version: **2025-12**
 
 All OpenTrackPlan files declare their format version:
 
 ```yaml
-opentp: 2025-06
+opentp: 2025-12
 ```
 
 ## File Types
 
 | File | Purpose | Schema |
 |------|---------|--------|
-| `opentp.yaml` | Main configuration | [opentp.schema.json](./schema/) |
-| `events/*.yaml` | Event definitions | [event.schema.json](./schema/events) |
-| `dictionaries/*.yaml` | Reusable value lists | [dict.schema.json](./schema/dictionaries) |
+| `opentp.yaml` | Main configuration | [opentp.yaml](./schema/opentp-yaml.md) |
+| `events/*.yaml` | Event definitions | [Event Files](./schema/events.md) |
+| `dictionaries/*.yaml` | Reusable value lists | [Dictionaries](./schema/dictionaries.md) |
 
 ## JSON Schemas
 
@@ -89,6 +89,8 @@ Schema URLs:
 | Main config | `https://opentp.dev/schemas/latest/opentp.schema.json` |
 | Events | `https://opentp.dev/schemas/latest/event.schema.json` |
 | Dictionaries | `https://opentp.dev/schemas/latest/dict.schema.json` |
+| Field (shared) | `https://opentp.dev/schemas/latest/field.schema.json` |
+| Version (shared) | `https://opentp.dev/schemas/latest/version.schema.json` |
 
 ## Getting Started
 

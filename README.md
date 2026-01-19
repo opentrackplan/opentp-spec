@@ -20,20 +20,20 @@ Analytics implementations often break down in communication:
 Create `opentp.yaml` in your project:
 
 ```yaml
-opentp: 2025-06
+opentp: 2025-12
 
 info:
   title: My Tracking Plan
   version: 1.0.0
 
 spec:
+  paths:
+    events:
+      root: /events
+      pattern: "{area}/{event}.yaml"
   events:
     key:
       pattern: "{area}::{event}"
-    paths:
-      events:
-        root: /events
-        pattern: "{area}/{event}.yaml"
     taxonomy:
       area:
         title: Area
@@ -43,8 +43,12 @@ spec:
         title: Event
         type: string
         required: true
+      action:
+        title: Action
+        type: string
+        required: true
     payload:
-      platforms:
+      targets:
         all: [web, ios, android]
       schema:
         event_name:
@@ -55,28 +59,32 @@ spec:
 Create an event in `events/auth/login.yaml`:
 
 ```yaml
-opentp: 2025-06
+opentp: 2025-12
 
 event:
   key: auth::login
 
   taxonomy:
-    area: auth
-    event: login
+    action: User clicks the login button
 
   payload:
-    platforms:
-      all:
-        active: 1.0.0
-        history:
-          1.0.0:
-            schema:
-              event_name:
-                value: login
-              auth_method:
-                type: string
-                enum: [email, google, github]
+    schema:
+      event_name:
+        value: login
+      auth_method:
+        type: string
+        enum: [email, google, github]
+      user_id:
+        type: string
+        pii:
+          kind: user_id
+          masker: star
+          owner: analytics
+          jira: ANALYTICS-123
 ```
+
+Note: if a taxonomy field is present in `spec.paths.events.pattern` (for example `{area}/{event}.yaml`),
+its value is extracted from the event file path and does not need to be duplicated in `event.taxonomy`.
 
 ## Documentation
 
@@ -95,6 +103,8 @@ All file formats have JSON schemas for IDE validation:
 | Main config | `https://opentp.dev/schemas/latest/opentp.schema.json` |
 | Events | `https://opentp.dev/schemas/latest/event.schema.json` |
 | Dictionaries | `https://opentp.dev/schemas/latest/dict.schema.json` |
+| Field (shared) | `https://opentp.dev/schemas/latest/field.schema.json` |
+| Version (shared) | `https://opentp.dev/schemas/latest/version.schema.json` |
 
 Add to your YAML files:
 
@@ -108,11 +118,16 @@ Add to your YAML files:
 
 ## Examples
 
-See the [examples/](examples/) directory for a complete tracking plan example.
+- `examples/full/` — full example (targets + versions + dictionaries)
+- `examples/simple/` — minimal example (implicit `all`, unversioned payload)
+
+## Repo checks
+
+- Run `python3 scripts/validate.py` to check examples and documentation snippets against the JSON schemas.
 
 ## Specification Version
 
-Current version: **2025-06**
+Current version: **2025-12**
 
 ## Contributing
 

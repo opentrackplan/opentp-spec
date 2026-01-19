@@ -1,0 +1,47 @@
+opentp: 2025-12
+
+event:
+  key: auth::login_button_click
+  lifecycle:
+    status: active
+  taxonomy:
+    action: User clicks the login button
+  payload:
+    all:
+      current: stable
+      stable: "1.1.0"
+      legacy: "1.0.0"
+      "1.0.0":
+        meta:
+          changes: Initial version
+          deprecated:
+            reason: Superseded by 1.1.0
+            date: "2025-01-01"
+        schema:
+          application_id:
+            value: web-app
+          event_name:
+            value: login_button_click
+          event_category:
+            value: auth
+          auth_method:
+            type: string
+            enum: [email, google, github]
+            required: true
+          user_id:
+            type: string
+            required: false
+            pii:
+              kind: user_id
+              masker: star
+              owner: analytics
+              jira: ANALYTICS-123
+      "1.1.0":
+        $ref: "1.0.0"
+        meta:
+          changes:
+            - Added screen_name
+        schema:
+          screen_name:
+            type: string
+            required: false

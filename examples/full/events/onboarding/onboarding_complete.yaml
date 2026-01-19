@@ -1,0 +1,43 @@
+opentp: 2025-12
+
+event:
+  key: onboarding::onboarding_complete
+
+  lifecycle:
+    status: active
+
+  taxonomy:
+    action: User finishes the onboarding flow
+
+  payload:
+    mobile:
+      current: stable
+      stable: "1.1.0"
+      "1.0.0":
+        meta:
+          changes: Initial version
+          deprecated:
+            reason: Superseded by 1.1.0
+            date: "2025-01-01"
+        schema:
+          application_id:
+            value: mobile-app
+          event_name:
+            value: onboarding_complete
+          event_category:
+            value: onboarding
+          total_steps:
+            type: number
+            required: true
+          skipped_steps:
+            type: number
+            required: false
+      "1.1.0":
+        $ref: "1.0.0"
+        meta:
+          changes:
+            - Added duration_seconds
+        schema:
+          duration_seconds:
+            type: number
+            required: false

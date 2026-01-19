@@ -35,7 +35,7 @@ Add this comment at the top of your YAML files:
 All OpenTrackPlan files start with:
 
 ```yaml
-opentp: 2025-06
+opentp: 2025-12
 ```
 
 This declares the format version for compatibility.

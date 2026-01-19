@@ -1,0 +1,46 @@
+opentp: 2025-12
+
+event:
+  key: auth::signup_complete
+
+  lifecycle:
+    status: active
+
+  taxonomy:
+    action: User completes registration
+
+  payload:
+    web:
+      schema:
+        application_id:
+          value: web-app
+        event_name:
+          value: signup_complete
+        event_category:
+          value: auth
+        signup_method:
+          type: string
+          enum: [email, google, github]
+          required: true
+        has_referral:
+          type: boolean
+          required: false
+
+    mobile:
+      schema:
+        application_id:
+          value: mobile-app
+        event_name:
+          value: signup_complete
+        event_category:
+          value: auth
+        signup_method:
+          type: string
+          enum: [email, google, github, apple]
+          required: true
+        has_referral:
+          type: boolean
+          required: false
+        push_opt_in:
+          type: boolean
+          required: false

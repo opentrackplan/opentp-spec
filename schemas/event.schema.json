@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2025-06/event.schema.json",
+  "$id": "https://opentp.dev/schemas/2025-12/event.schema.json",
   "title": "OpenTrackPlan Event",
   "description": "Schema for OpenTrackPlan event files (.yaml). Note: taxonomy and payload fields are validated by CLI based on opentp.yaml",
   "type": "object",
@@ -77,9 +77,9 @@
             }
           }
         },
-        "ignoreChecks": {
+        "ignore": {
           "type": "array",
-          "description": "Validation checks to skip for this event",
+          "description": "Validations to skip for this event",
           "items": {
             "type": "object",
             "required": ["path", "reason"],
@@ -98,59 +98,122 @@
         },
         "payload": {
           "type": "object",
-          "description": "Data sent to analytics platforms",
-          "required": ["platforms"],
-          "additionalProperties": false,
-          "properties": {
-            "platforms": {
-              "type": "object",
-              "description": "Platform-specific payload definitions",
-              "additionalProperties": {
-                "$ref": "#/definitions/platformPayload"
-              }
+          "description": "Data sent to analytics targets",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/target"
+            },
+            {
+              "$ref": "#/definitions/payloadTargets"
             }
-          }
+          ]
         }
       }
     }
   },
   "definitions": {
-    "platformPayload": {
+    "payloadTargets": {
       "type": "object",
-      "description": "Payload definition for a specific platform",
-      "required": ["active", "history"],
-      "additionalProperties": false,
-      "properties": {
-        "active": {
-          "$ref": "version.schema.json"
+      "description": "Target-specific payload definitions (payload.<target>)",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/target"
+      }
+    },
+    "target": {
+      "description": "Payload definition for a target. Can be unversioned (schema/meta) or versioned (current + versions map).",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/payloadVersion"
         },
-        "history": {
-          "type": "object",
-          "description": "Version history of payload schemas",
-          "additionalProperties": {
+        {
+          "$ref": "#/definitions/versionedTarget"
+        }
+      ]
+    },
+    "versionedTarget": {
+      "type": "object",
+      "description": "Versioned payload for a target (supports tags/aliases). Keys with object values are versions; keys with string values are aliases.",
+      "required": ["current"],
+      "additionalProperties": {
+        "anyOf": [
+          {
             "$ref": "#/definitions/payloadVersion"
+          },
+          {
+            "type": "string",
+            "description": "Alias/tag pointing to an existing version key"
+          }
+        ]
+      },
+      "properties": {
+        "current": {
+          "type": "string",
+          "description": "Current payload version or tag to use by default"
+        }
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": ["schema"]
           }
         }
-      }
+      ]
     },
     "payloadVersion": {
       "type": "object",
-      "description": "A specific version of the payload schema",
+      "description": "A specific payload schema snapshot (optionally derived from another via $ref)",
       "required": ["schema"],
       "additionalProperties": false,
       "properties": {
-        "changes": {
-          "type": "array",
-          "description": "List of changes in this version",
-          "items": {
-            "type": "string"
-          }
+        "$ref": {
+          "type": "string",
+          "description": "Reference to another payload version to derive from (resolver-defined syntax, e.g. '1.0.0' or 'all::1.0.0')"
+        },
+        "meta": {
+          "$ref": "#/definitions/payloadMeta"
         },
         "schema": {
           "type": "object",
           "description": "Field definitions",
           "additionalProperties": {
             "$ref": "field.schema.json"
+          }
+        }
+      }
+    },
+    "payloadMeta": {
+      "type": "object",
+      "description": "Metadata about this payload version",
+      "additionalProperties": false,
+      "properties": {
+        "changes": {
+          "description": "Human-readable changes in this version",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "deprecated": {
+          "type": "object",
+          "description": "Deprecation info for this payload version",
+          "additionalProperties": false,
+          "required": ["reason"],
+          "properties": {
+            "reason": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            }
           }
         }
       }

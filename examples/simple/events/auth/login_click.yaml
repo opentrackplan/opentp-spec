@@ -1,0 +1,16 @@
+opentp: 2025-12
+
+event:
+  key: auth::login_click
+
+  taxonomy:
+    action: User clicks the login button
+
+  payload:
+    schema:
+      event_name:
+        value: login_click
+      auth_method:
+        type: string
+        enum: [email, google, github]
+        required: true

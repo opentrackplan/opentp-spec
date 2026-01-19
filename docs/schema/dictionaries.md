@@ -7,7 +7,7 @@ Dictionaries define allowed values that can be referenced across your tracking p
 ```yaml
 # yaml-language-server: $schema=https://opentp.dev/schemas/latest/dict.schema.json
 # dictionaries/taxonomy/areas.yaml
-opentp: 2025-06
+opentp: 2025-12
 
 dict:
   type: string
@@ -74,15 +74,10 @@ Reference a dictionary in event-specific fields:
 ```yaml
 # events/auth/login.yaml
 payload:
-  platforms:
-    all:
-      active: 1.0.0
-      history:
-        1.0.0:
-          schema:
-            auth_method:
-              type: string
-              dict: data/auth_methods
+  schema:
+    auth_method:
+      type: string
+      dict: data/auth_methods
 ```
 
 ## Dictionary Path Resolution
@@ -92,10 +87,12 @@ Dictionary paths are relative to the dictionaries root:
 ```yaml
 # opentp.yaml
 spec:
-  events:
-    paths:
-      dictionaries:
-        root: /dictionaries
+  paths:
+    events:
+      root: /events
+      pattern: "{area}/{event}.yaml"
+    dictionaries:
+      root: /dictionaries
 ```
 
 Reference `taxonomy/areas` resolves to `dictionaries/taxonomy/areas.yaml`.
@@ -109,9 +106,12 @@ dictionaries/
 ├── taxonomy/           # Taxonomy value dictionaries
 │   ├── areas.yaml
 │   └── teams.yaml
-└── data/               # Payload value dictionaries
-    ├── application_id.yaml
-    └── auth_methods.yaml
+├── data/               # Payload value dictionaries
+│   ├── application_id.yaml
+│   └── auth_methods.yaml
+└── governance/         # PII/governance metadata dictionaries (optional)
+    ├── pii-kinds.yaml
+    └── pii-owners.yaml
 ```
 
 ## Examples
@@ -120,7 +120,7 @@ dictionaries/
 
 ```yaml
 # dictionaries/data/auth_methods.yaml
-opentp: 2025-06
+opentp: 2025-12
 
 dict:
   type: string
@@ -135,7 +135,7 @@ dict:
 
 ```yaml
 # dictionaries/data/priority_levels.yaml
-opentp: 2025-06
+opentp: 2025-12
 
 dict:
   type: number

@@ -10,7 +10,10 @@ event:
     schema:
       event_name:
         value: login_click
-      auth_method:
+        x-opentp:
+          role: constant
+      user_id:
         type: string
-        enum: [email, google, github]
-        required: true
+        x-opentp:
+          checks:
+            mytool.starts-with: "usr_"

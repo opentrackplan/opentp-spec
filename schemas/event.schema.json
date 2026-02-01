@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2025-12/event.schema.json",
+  "$id": "https://opentp.dev/schemas/2026-01/event.schema.json",
   "title": "OpenTrackPlan Event",
   "description": "Schema for OpenTrackPlan event files (.yaml). Note: taxonomy and payload fields are validated by CLI based on opentp.yaml",
   "type": "object",
@@ -17,8 +17,7 @@
       "additionalProperties": false,
       "properties": {
         "key": {
-          "type": "string",
-          "description": "Unique event identifier, format defined in opentp.yaml"
+          "$ref": "#/definitions/eventKey"
         },
         "lifecycle": {
           "type": "object",
@@ -40,8 +39,7 @@
               "description": "Reason for deprecation"
             },
             "replacedBy": {
-              "type": "string",
-              "description": "Key of the replacement event"
+              "$ref": "#/definitions/eventKey"
             }
           }
         },
@@ -58,8 +56,7 @@
             "additionalProperties": false,
             "properties": {
               "key": {
-                "type": "string",
-                "description": "Previous event key"
+                "$ref": "#/definitions/eventKey"
               },
               "deprecated": {
                 "type": "object",
@@ -112,6 +109,11 @@
     }
   },
   "definitions": {
+    "eventKey": {
+      "type": "string",
+      "description": "Event key / identifier. Opaque string that must be unique within a tracking plan.",
+      "minLength": 1
+    },
     "payloadTargets": {
       "type": "object",
       "description": "Target-specific payload definitions (payload.<target>)",

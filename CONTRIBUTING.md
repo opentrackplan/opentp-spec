@@ -16,7 +16,7 @@ Thank you for your interest in contributing to the OpenTrackPlan specification!
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Make your changes
 4. Test your changes
-   - Run `python3 scripts/validate.py` (checks examples + docs snippets against the JSON schemas)
+   - Run `bun scripts/validate.ts` (checks examples + docs snippets against the JSON schemas)
 5. Commit with clear messages
 6. Push to your fork
 7. Open a Pull Request

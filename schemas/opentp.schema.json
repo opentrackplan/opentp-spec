@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2025-12/opentp.schema.json",
+  "$id": "https://opentp.dev/schemas/2026-01/opentp.schema.json",
   "title": "OpenTrackPlan Configuration",
   "description": "Schema for opentp.yaml - the main configuration file",
   "type": "object",
@@ -57,23 +57,24 @@
             }
           }
         },
+        "targets": {
+          "type": "object",
+          "description": "Target definitions (tooling-defined semantics). Keys are target IDs (e.g. 'ios-ga').",
+          "additionalProperties": {
+            "$ref": "#/definitions/targetConfig"
+          }
+        },
         "events": {
           "type": "object",
           "description": "Events configuration",
-          "required": ["key", "taxonomy", "payload"],
+          "required": ["taxonomy", "payload"],
           "additionalProperties": false,
           "properties": {
             "key": {
-              "type": "object",
-              "description": "Event key format",
-              "required": ["pattern"],
-              "additionalProperties": false,
-              "properties": {
-                "pattern": {
-                  "type": "string",
-                  "description": "Pattern for generating event keys"
-                }
-              }
+              "$ref": "#/definitions/eventKeyConstraints"
+            },
+            "x-opentp": {
+              "$ref": "#/definitions/xOpentpEvents"
             },
             "taxonomy": {
               "type": "object",
@@ -112,13 +113,6 @@
               "$ref": "#/definitions/piiConfig"
             }
           }
-        },
-        "transforms": {
-          "type": "object",
-          "description": "Transform definitions",
-          "additionalProperties": {
-            "$ref": "#/definitions/transform"
-          }
         }
       }
     }
@@ -127,16 +121,16 @@
     "eventsPathConfig": {
       "type": "object",
       "description": "Path configuration for event files",
-      "required": ["root", "pattern"],
+      "required": ["root", "template"],
       "additionalProperties": false,
       "properties": {
         "root": {
           "type": "string",
           "description": "Root directory path"
         },
-        "pattern": {
+        "template": {
           "type": "string",
-          "description": "File name pattern"
+          "description": "Path template using taxonomy fields (e.g. '{area}/{event}.yaml')"
         }
       }
     },
@@ -149,6 +143,97 @@
         "root": {
           "type": "string",
           "description": "Root directory path"
+        }
+      }
+    },
+    "xOpentpField": {
+      "type": "object",
+      "description": "OpenTrackPlan extensions (tooling-defined).",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Field role hint for tooling (does not affect schema validation).",
+          "enum": ["constant", "attribute", "shared"]
+        },
+        "checks": {
+          "type": "object",
+          "description": "Tooling-defined validation checks (non-portable).",
+          "additionalProperties": true
+        }
+      }
+    },
+    "eventKeyConstraints": {
+      "type": "object",
+      "description": "Constraints for event.key values (opaque string identifier). No key generation is defined in the core spec.",
+      "additionalProperties": false,
+      "properties": {
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum key length"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum key length"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern for event keys"
+        },
+        "format": {
+          "type": "string",
+          "description": "String format hint (tooling may validate)",
+          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+        }
+      }
+    },
+    "xOpentpEvents": {
+      "type": "object",
+      "description": "OpenTrackPlan extensions for spec.events (tooling-defined).",
+      "additionalProperties": false,
+      "properties": {
+        "keygen": {
+          "type": "object",
+          "description": "Tooling-defined event key generation config (reference CLI can validate and auto-fix keys).",
+          "required": ["template"],
+          "additionalProperties": false,
+          "properties": {
+            "template": {
+              "type": "string",
+              "description": "Template for generating event keys from taxonomy values (e.g. '{area | slug}::{event | slug}')."
+            },
+            "transforms": {
+              "type": "object",
+              "description": "Transform definitions used by keygen templates",
+              "additionalProperties": {
+                "$ref": "#/definitions/transform"
+              }
+            }
+          }
+        }
+      }
+    },
+    "targetConfig": {
+      "type": "object",
+      "description": "Target configuration (per target ID, e.g. 'ios-ga').",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Target description"
+        },
+        "schema": {
+          "type": "object",
+          "description": "Base/shared schema for this target (merged into every event payload for this target).",
+          "additionalProperties": {
+            "$ref": "field.schema.json"
+          }
         }
       }
     },
@@ -169,15 +254,15 @@
         "type": {
           "type": "string",
           "description": "Data type",
-          "enum": ["string", "number", "boolean"]
+          "enum": ["string", "number", "integer", "boolean"]
         },
         "required": {
           "type": "boolean",
           "description": "Whether this field is required"
         },
-        "pattern": {
+        "template": {
           "type": "string",
-          "description": "Pattern for composite fields"
+          "description": "Template for composite fields using fragments (e.g. '{verb} - {object}')"
         },
         "enum": {
           "type": "array",
@@ -187,17 +272,56 @@
           "type": "string",
           "description": "Reference to dictionary (e.g., 'taxonomy/apps')"
         },
-        "checks": {
-          "type": "object",
-          "description": "Validation checks for this field",
-          "additionalProperties": true
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum string length (type: string)"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum string length (type: string)"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern constraint (type: string)"
+        },
+        "format": {
+          "type": "string",
+          "description": "String format hint (tooling may validate)",
+          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+        },
+        "minimum": {
+          "type": "number",
+          "description": "Minimum numeric value (type: number | integer)"
+        },
+        "maximum": {
+          "type": "number",
+          "description": "Maximum numeric value (type: number | integer)"
+        },
+        "exclusiveMinimum": {
+          "type": "number",
+          "description": "Exclusive minimum numeric value (type: number | integer)"
+        },
+        "exclusiveMaximum": {
+          "type": "number",
+          "description": "Exclusive maximum numeric value (type: number | integer)"
+        },
+        "multipleOf": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Numeric multiple constraint (type: number | integer)"
         },
         "fragments": {
           "type": "object",
           "description": "Sub-fields for composite fields",
+          "minProperties": 1,
           "additionalProperties": {
             "$ref": "#/definitions/taxonomyField"
           }
+        },
+        "x-opentp": {
+          "$ref": "#/definitions/xOpentpField"
         }
       },
       "allOf": [
@@ -210,37 +334,82 @@
           "oneOf": [
             {
               "not": {
-                "required": ["enum"]
+                "anyOf": [{ "required": ["template"] }, { "required": ["fragments"] }]
               }
             },
             {
-              "required": ["enum"],
+              "required": ["template", "fragments"]
+            }
+          ]
+        },
+        {
+          "oneOf": [
+            {
               "properties": {
                 "type": { "const": "string" },
-                "enum": {
-                  "type": "array",
-                  "items": { "type": "string" }
-                }
+                "enum": { "type": "array", "items": { "type": "string" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["minimum"] },
+                  { "required": ["maximum"] },
+                  { "required": ["exclusiveMinimum"] },
+                  { "required": ["exclusiveMaximum"] },
+                  { "required": ["multipleOf"] }
+                ]
               }
             },
             {
-              "required": ["enum"],
               "properties": {
                 "type": { "const": "number" },
-                "enum": {
-                  "type": "array",
-                  "items": { "type": "number" }
-                }
+                "enum": { "type": "array", "items": { "type": "number" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["template"] },
+                  { "required": ["fragments"] },
+                  { "required": ["minLength"] },
+                  { "required": ["maxLength"] },
+                  { "required": ["pattern"] },
+                  { "required": ["format"] }
+                ]
               }
             },
             {
-              "required": ["enum"],
+              "properties": {
+                "type": { "const": "integer" },
+                "enum": { "type": "array", "items": { "type": "integer" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["template"] },
+                  { "required": ["fragments"] },
+                  { "required": ["minLength"] },
+                  { "required": ["maxLength"] },
+                  { "required": ["pattern"] },
+                  { "required": ["format"] }
+                ]
+              }
+            },
+            {
               "properties": {
                 "type": { "const": "boolean" },
-                "enum": {
-                  "type": "array",
-                  "items": { "type": "boolean" }
-                }
+                "enum": { "type": "array", "items": { "type": "boolean" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["template"] },
+                  { "required": ["fragments"] },
+                  { "required": ["minLength"] },
+                  { "required": ["maxLength"] },
+                  { "required": ["pattern"] },
+                  { "required": ["format"] },
+                  { "required": ["minimum"] },
+                  { "required": ["maximum"] },
+                  { "required": ["exclusiveMinimum"] },
+                  { "required": ["exclusiveMaximum"] },
+                  { "required": ["multipleOf"] }
+                ]
               }
             }
           ]
@@ -295,10 +464,27 @@
           "type": "string",
           "description": "Reference to dictionary (e.g., 'governance/pii-kinds')"
         },
-        "checks": {
-          "type": "object",
-          "description": "Validation checks for this field",
-          "additionalProperties": true
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum string length"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum string length"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern constraint"
+        },
+        "format": {
+          "type": "string",
+          "description": "String format hint (tooling may validate)",
+          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+        },
+        "x-opentp": {
+          "$ref": "#/definitions/xOpentpField"
         }
       },
       "allOf": [
@@ -326,7 +512,7 @@
         "type": {
           "type": "string",
           "description": "Data type",
-          "enum": ["string", "number", "boolean"]
+          "enum": ["string", "number", "integer", "boolean"]
         },
         "required": {
           "type": "boolean",
@@ -340,10 +526,48 @@
           "type": "string",
           "description": "Reference to dictionary (e.g., 'governance/pii-owners')"
         },
-        "checks": {
-          "type": "object",
-          "description": "Validation checks for this field",
-          "additionalProperties": true
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum string length (type: string)"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum string length (type: string)"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern constraint (type: string)"
+        },
+        "format": {
+          "type": "string",
+          "description": "String format hint (tooling may validate)",
+          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+        },
+        "minimum": {
+          "type": "number",
+          "description": "Minimum numeric value (type: number | integer)"
+        },
+        "maximum": {
+          "type": "number",
+          "description": "Maximum numeric value (type: number | integer)"
+        },
+        "exclusiveMinimum": {
+          "type": "number",
+          "description": "Exclusive minimum numeric value (type: number | integer)"
+        },
+        "exclusiveMaximum": {
+          "type": "number",
+          "description": "Exclusive maximum numeric value (type: number | integer)"
+        },
+        "multipleOf": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Numeric multiple constraint (type: number | integer)"
+        },
+        "x-opentp": {
+          "$ref": "#/definitions/xOpentpField"
         }
       },
       "allOf": [
@@ -355,38 +579,65 @@
         {
           "oneOf": [
             {
-              "not": {
-                "required": ["enum"]
-              }
-            },
-            {
-              "required": ["enum"],
               "properties": {
                 "type": { "const": "string" },
-                "enum": {
-                  "type": "array",
-                  "items": { "type": "string" }
-                }
+                "enum": { "type": "array", "items": { "type": "string" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["minimum"] },
+                  { "required": ["maximum"] },
+                  { "required": ["exclusiveMinimum"] },
+                  { "required": ["exclusiveMaximum"] },
+                  { "required": ["multipleOf"] }
+                ]
               }
             },
             {
-              "required": ["enum"],
               "properties": {
                 "type": { "const": "number" },
-                "enum": {
-                  "type": "array",
-                  "items": { "type": "number" }
-                }
+                "enum": { "type": "array", "items": { "type": "number" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["minLength"] },
+                  { "required": ["maxLength"] },
+                  { "required": ["pattern"] },
+                  { "required": ["format"] }
+                ]
               }
             },
             {
-              "required": ["enum"],
+              "properties": {
+                "type": { "const": "integer" },
+                "enum": { "type": "array", "items": { "type": "integer" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["minLength"] },
+                  { "required": ["maxLength"] },
+                  { "required": ["pattern"] },
+                  { "required": ["format"] }
+                ]
+              }
+            },
+            {
               "properties": {
                 "type": { "const": "boolean" },
-                "enum": {
-                  "type": "array",
-                  "items": { "type": "boolean" }
-                }
+                "enum": { "type": "array", "items": { "type": "boolean" } }
+              },
+              "not": {
+                "anyOf": [
+                  { "required": ["minLength"] },
+                  { "required": ["maxLength"] },
+                  { "required": ["pattern"] },
+                  { "required": ["format"] },
+                  { "required": ["minimum"] },
+                  { "required": ["maximum"] },
+                  { "required": ["exclusiveMinimum"] },
+                  { "required": ["exclusiveMaximum"] },
+                  { "required": ["multipleOf"] }
+                ]
               }
             }
           ]

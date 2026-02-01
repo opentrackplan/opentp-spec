@@ -1,4 +1,4 @@
-opentp: 2025-12
+opentp: 2026-01
 
 info:
   title: Example Tracking Plan
@@ -11,13 +11,13 @@ spec:
   paths:
     events:
       root: /events
-      pattern: "{area}/{event}.yaml"
+      template: "{area}/{event}.yaml"
     dictionaries:
       root: /dictionaries
 
   events:
     key:
-      pattern: "{area | slug}::{event | slug}"
+      pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
 
     taxonomy:
       area:
@@ -33,8 +33,7 @@ spec:
         title: Action
         type: string
         description: Human-readable description of what triggers the event
-        checks:
-          max-length: 100
+        maxLength: 100
         required: true
       priority_level:
         title: Priority Level
@@ -80,18 +79,8 @@ spec:
         jira:
           type: string
           required: true
-          checks:
-            pattern: "^[A-Z]+-[0-9]+$"
+          pattern: "^[A-Z]+-[0-9]+$"
         retention_days:
           type: number
           enum: [0, 7, 30]
           required: false
-
-  transforms:
-    slug:
-      - lower
-      - trim
-      - replace:
-          from: " "
-          to: "_"
-      - truncate: 160

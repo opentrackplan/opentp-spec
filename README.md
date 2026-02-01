@@ -20,7 +20,7 @@ Analytics implementations often break down in communication:
 Create `opentp.yaml` in your project:
 
 ```yaml
-opentp: 2025-12
+opentp: 2026-01
 
 info:
   title: My Tracking Plan
@@ -30,10 +30,10 @@ spec:
   paths:
     events:
       root: /events
-      pattern: "{area}/{event}.yaml"
+      template: "{area}/{event}.yaml"
   events:
     key:
-      pattern: "{area}::{event}"
+      pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
     taxonomy:
       area:
         title: Area
@@ -59,7 +59,7 @@ spec:
 Create an event in `events/auth/login.yaml`:
 
 ```yaml
-opentp: 2025-12
+opentp: 2026-01
 
 event:
   key: auth::login
@@ -83,7 +83,7 @@ event:
           jira: ANALYTICS-123
 ```
 
-Note: if a taxonomy field is present in `spec.paths.events.pattern` (for example `{area}/{event}.yaml`),
+Note: if a taxonomy field is present in `spec.paths.events.template` (for example `{area}/{event}.yaml`),
 its value is extracted from the event file path and does not need to be duplicated in `event.taxonomy`.
 
 ## Documentation
@@ -120,14 +120,15 @@ Add to your YAML files:
 
 - `examples/full/` — full example (targets + versions + dictionaries)
 - `examples/simple/` — minimal example (implicit `all`, unversioned payload)
+- `examples/extensions/` — examples using `x-opentp` extensions (tooling-defined)
 
 ## Repo checks
 
-- Run `python3 scripts/validate.py` to check examples and documentation snippets against the JSON schemas.
+- Run `bun scripts/validate.ts` to check examples and documentation snippets against the JSON schemas.
 
 ## Specification Version
 
-Current version: **2025-12**
+Current version: **2026-01**
 
 ## Contributing
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2025-12/field.schema.json",
+  "$id": "https://opentp.dev/schemas/2026-01/field.schema.json",
   "title": "OpenTrackPlan Field",
-  "description": "Field definition. Use 'value' for fixed values, 'enum' or 'dict' for allowed values",
+  "description": "Field definition. Use 'type' for the expected data type, 'value' for fixed values, and 'enum' or 'dict' to restrict allowed values.",
   "type": "object",
   "allOf": [
     {
@@ -19,6 +19,12 @@
       "not": {
         "required": ["dict", "value"]
       }
+    },
+    {
+      "anyOf": [
+        { "required": ["type"] },
+        { "required": ["value"] }
+      ]
     }
   ],
   "additionalProperties": false,
@@ -34,7 +40,7 @@
     "type": {
       "type": "string",
       "description": "Data type",
-      "enum": ["string", "number", "boolean"]
+      "enum": ["string", "number", "integer", "boolean", "array"]
     },
     "enum": {
       "type": "array",
@@ -49,12 +55,76 @@
       "description": "Whether this field is required"
     },
     "value": {
-      "description": "Fixed value for this field (string, number, or boolean)"
+      "description": "Fixed value for this field",
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "integer" },
+        { "type": "boolean" },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
+          }
+        }
+      ]
     },
-    "checks": {
-      "type": "object",
-      "description": "Validation checks for this field",
-      "additionalProperties": true
+    "minLength": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Minimum string length (type: string)"
+    },
+    "maxLength": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum string length (type: string)"
+    },
+    "pattern": {
+      "type": "string",
+      "description": "Regex pattern constraint (type: string)"
+    },
+    "format": {
+      "type": "string",
+      "description": "String format hint (tooling may validate)",
+      "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+    },
+    "minimum": {
+      "type": "number",
+      "description": "Minimum numeric value (type: number | integer)"
+    },
+    "maximum": {
+      "type": "number",
+      "description": "Maximum numeric value (type: number | integer)"
+    },
+    "exclusiveMinimum": {
+      "type": "number",
+      "description": "Exclusive minimum numeric value (type: number | integer)"
+    },
+    "exclusiveMaximum": {
+      "type": "number",
+      "description": "Exclusive maximum numeric value (type: number | integer)"
+    },
+    "multipleOf": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Numeric multiple constraint (type: number | integer)"
+    },
+    "items": {
+      "$ref": "#/definitions/arrayItems"
+    },
+    "minItems": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Minimum array length (type: array)"
+    },
+    "maxItems": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum array length (type: array)"
+    },
+    "uniqueItems": {
+      "type": "boolean",
+      "description": "Whether array items must be unique (type: array)"
     },
     "pii": {
       "type": "object",
@@ -70,6 +140,301 @@
           "description": "Masker implementation id (reserved; configured in opentp.yaml)"
         }
       }
+    },
+    "x-opentp": {
+      "$ref": "#/definitions/xOpentp"
+    }
+  },
+  "oneOf": [
+    {
+      "description": "Untyped field (commonly used for fixed values that inherit type from opentp.yaml).",
+      "allOf": [
+        {
+          "not": {
+            "required": ["type"]
+          }
+        },
+        {
+          "not": {
+            "anyOf": [
+              { "required": ["enum"] },
+              { "required": ["dict"] },
+              { "required": ["minLength"] },
+              { "required": ["maxLength"] },
+              { "required": ["pattern"] },
+              { "required": ["format"] },
+              { "required": ["minimum"] },
+              { "required": ["maximum"] },
+              { "required": ["exclusiveMinimum"] },
+              { "required": ["exclusiveMaximum"] },
+              { "required": ["multipleOf"] },
+              { "required": ["items"] },
+              { "required": ["minItems"] },
+              { "required": ["maxItems"] },
+              { "required": ["uniqueItems"] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "description": "String field",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "string" },
+        "enum": { "type": "array", "items": { "type": "string" } },
+        "value": { "type": "string" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["minimum"] },
+          { "required": ["maximum"] },
+          { "required": ["exclusiveMinimum"] },
+          { "required": ["exclusiveMaximum"] },
+          { "required": ["multipleOf"] },
+          { "required": ["items"] },
+          { "required": ["minItems"] },
+          { "required": ["maxItems"] },
+          { "required": ["uniqueItems"] }
+        ]
+      }
+    },
+    {
+      "description": "Number field",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "number" },
+        "enum": { "type": "array", "items": { "type": "number" } },
+        "value": { "type": "number" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["minLength"] },
+          { "required": ["maxLength"] },
+          { "required": ["pattern"] },
+          { "required": ["format"] },
+          { "required": ["items"] },
+          { "required": ["minItems"] },
+          { "required": ["maxItems"] },
+          { "required": ["uniqueItems"] }
+        ]
+      }
+    },
+    {
+      "description": "Integer field",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "integer" },
+        "enum": { "type": "array", "items": { "type": "integer" } },
+        "value": { "type": "integer" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["minLength"] },
+          { "required": ["maxLength"] },
+          { "required": ["pattern"] },
+          { "required": ["format"] },
+          { "required": ["items"] },
+          { "required": ["minItems"] },
+          { "required": ["maxItems"] },
+          { "required": ["uniqueItems"] }
+        ]
+      }
+    },
+    {
+      "description": "Boolean field",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "boolean" },
+        "enum": { "type": "array", "items": { "type": "boolean" } },
+        "value": { "type": "boolean" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["minLength"] },
+          { "required": ["maxLength"] },
+          { "required": ["pattern"] },
+          { "required": ["format"] },
+          { "required": ["minimum"] },
+          { "required": ["maximum"] },
+          { "required": ["exclusiveMinimum"] },
+          { "required": ["exclusiveMaximum"] },
+          { "required": ["multipleOf"] },
+          { "required": ["items"] },
+          { "required": ["minItems"] },
+          { "required": ["maxItems"] },
+          { "required": ["uniqueItems"] }
+        ]
+      }
+    },
+    {
+      "description": "Array field (arrays of scalar items only)",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "array" },
+        "value": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["enum"] },
+          { "required": ["dict"] },
+          { "required": ["minLength"] },
+          { "required": ["maxLength"] },
+          { "required": ["pattern"] },
+          { "required": ["format"] },
+          { "required": ["minimum"] },
+          { "required": ["maximum"] },
+          { "required": ["exclusiveMinimum"] },
+          { "required": ["exclusiveMaximum"] },
+          { "required": ["multipleOf"] }
+        ]
+      }
+    }
+  ],
+  "definitions": {
+    "xOpentp": {
+      "type": "object",
+      "description": "OpenTrackPlan extensions (tooling-defined).",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Field role hint for tooling (does not affect schema validation).",
+          "enum": ["constant", "attribute", "shared"]
+        },
+        "checks": {
+          "type": "object",
+          "description": "Tooling-defined validation checks (non-portable).",
+          "additionalProperties": true
+        }
+      }
+    },
+    "arrayItems": {
+      "type": "object",
+      "description": "Array item schema. Only scalar item types are allowed.",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "integer", "boolean"]
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed values for each array item"
+        },
+        "dict": {
+          "type": "string",
+          "description": "Reference to a dictionary (e.g., 'data/tags')"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "exclusiveMinimum": {
+          "type": "number"
+        },
+        "exclusiveMaximum": {
+          "type": "number"
+        },
+        "multipleOf": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": ["enum", "dict"]
+          }
+        }
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "string" },
+            "enum": { "type": "array", "items": { "type": "string" } }
+          },
+          "not": {
+            "anyOf": [
+              { "required": ["minimum"] },
+              { "required": ["maximum"] },
+              { "required": ["exclusiveMinimum"] },
+              { "required": ["exclusiveMaximum"] },
+              { "required": ["multipleOf"] }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "type": { "const": "number" },
+            "enum": { "type": "array", "items": { "type": "number" } }
+          },
+          "not": {
+            "anyOf": [
+              { "required": ["minLength"] },
+              { "required": ["maxLength"] },
+              { "required": ["pattern"] },
+              { "required": ["format"] }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "type": { "const": "integer" },
+            "enum": { "type": "array", "items": { "type": "integer" } }
+          },
+          "not": {
+            "anyOf": [
+              { "required": ["minLength"] },
+              { "required": ["maxLength"] },
+              { "required": ["pattern"] },
+              { "required": ["format"] }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "type": { "const": "boolean" },
+            "enum": { "type": "array", "items": { "type": "boolean" } }
+          },
+          "not": {
+            "anyOf": [
+              { "required": ["minLength"] },
+              { "required": ["maxLength"] },
+              { "required": ["pattern"] },
+              { "required": ["format"] },
+              { "required": ["minimum"] },
+              { "required": ["maximum"] },
+              { "required": ["exclusiveMinimum"] },
+              { "required": ["exclusiveMaximum"] },
+              { "required": ["multipleOf"] }
+            ]
+          }
+        }
+      ]
     }
   }
 }

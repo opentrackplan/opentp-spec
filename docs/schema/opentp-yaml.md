@@ -1,11 +1,11 @@
 # opentp.yaml
 
-The main configuration file defines your tracking plan structure, taxonomy, transforms, and validation checks.
+The main configuration file defines your tracking plan structure (paths), targets, taxonomy, payload schema, and optional tooling extensions.
 
 ## Minimal Example
 
 ```yaml
-opentp: 2025-12
+opentp: 2026-01
 
 info:
   title: My Tracking Plan
@@ -15,11 +15,9 @@ spec:
   paths:
     events:
       root: /events
-      pattern: "{area}/{event}.yaml"
+      template: "{area}/{event}.yaml"
 
   events:
-    key:
-      pattern: "{area}::{event}"
     taxonomy:
       area:
         title: Area
@@ -33,6 +31,7 @@ spec:
         title: Action
         type: string
         required: true
+
     payload:
       targets:
         all: [web, ios, android]
@@ -42,91 +41,145 @@ spec:
           required: true
 ```
 
-## Full Reference
-
-### Root Fields
+## Root Fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `opentp` | string | Yes | Format version (e.g., "2025-12") |
+| `opentp` | string | Yes | Format version (e.g., `2026-01`) |
 | `info` | object | Yes | Project metadata |
 | `spec` | object | Yes | Tracking plan specification |
 
-### info
-
-```yaml
-info:
-  title: My Tracking Plan
-  version: 1.0.0
-  description: Analytics events for My App
-  contact:
-    - Analytics Team <analytics@example.com>
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `title` | string | Yes | Project name |
-| `version` | string | Yes | Project version |
-| `description` | string | No | Project description |
-| `contact` | array | No | Contact information |
-
-### spec.paths
+## spec.paths
 
 ```yaml
 spec:
   paths:
     events:
       root: /events
-      pattern: "{area}/{event}.yaml"
+      template: "{area}/{event}.yaml"
     dictionaries:
       root: /dictionaries
 ```
 
-#### paths.events
+### paths.events
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `root` | string | Base directory for events |
-| `pattern` | string | File path pattern using taxonomy fields |
+| `template` | string | File path template using taxonomy fields |
 
-Fields used in `spec.paths.events.pattern` are extracted from the event file path and added to `event.taxonomy`.
-If a field is present in the path pattern, it does not need to be duplicated inside the event YAML.
+Fields used in `spec.paths.events.template` are extracted from the event file path and added to `event.taxonomy`.
+If a field is present in the path template, it does not need to be duplicated inside the event YAML.
 
-#### paths.dictionaries
+#### paths.events.template syntax
+
+`template` is a placeholder-based path template. Placeholders are written as `{fieldId}` where `fieldId` matches:
+
+- `/^[A-Za-z_][A-Za-z0-9_]*$/`
+
+Rules:
+
+- `fieldId` should be a taxonomy field key defined under `spec.events.taxonomy` (for example `area`, `event`).
+- Matching is performed against the event file path **relative to** `paths.events.root` (no leading slash).
+- Placeholders match a single path segment (they do not span `/`).
+- This is **not** a regex: no wildcards, no transforms, and no special escaping rules are defined.
+- When a path matches, the extracted values are added to `event.taxonomy` (tooling may treat mismatches as errors if the event file also specifies the same keys).
+
+Example:
+
+- `root: /events`
+- `template: "{area}/{event}.yaml"`
+- Event file: `events/auth/login_click.yaml` → extracts `area=auth`, `event=login_click`
+
+### paths.dictionaries
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `root` | string | Base directory for dictionaries |
 | _(no other fields)_ |  | Dictionary paths are resolved as `<root>/<dict>.yaml` |
 
-### spec.events
+## spec.targets
+
+Targets are identifiers for where events are sent (for example `ios-ga`, `ios-ampl`, `web-ga`).
+
+`spec.targets.<targetId>.schema` defines a base/shared schema for that target.
+Tooling may merge it into every event payload for that target.
+
+Target IDs should match the IDs listed under `spec.events.payload.targets.all`.
+
+```yaml
+spec:
+  targets:
+    ios-ga:
+      title: iOS (GA4)
+      schema:
+        os_name:
+          type: string
+          x-opentp:
+            role: shared
+        os_version:
+          type: string
+        app_version:
+          type: string
+```
+
+## spec.events
+
+### events.key (constraints only)
+
+Defines portable constraints for `event.key` (which is an opaque string identifier and must be unique within a tracking plan).
+
+Because `event.key` is always a string, `type: string` is implicit here.
+
+This section does **not** define key generation.
+If you want key generation and auto-fix, use `spec.events.x-opentp.keygen` (tooling extension).
 
 ```yaml
 spec:
   events:
     key:
-      pattern: "{area}::{event}"
+      minLength: 3
+      maxLength: 160
+      pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
 ```
 
-#### key.pattern
+### spec.events.x-opentp (extensions)
 
-Defines how event keys are generated from taxonomy values.
+`x-opentp` is the reserved extension container used by OpenTrackPlan reference tooling.
+Extensions are optional and should not be required for interoperability.
 
-- Use `{field}` to insert a taxonomy field
-- Use `{field | transform}` to apply a transform
-- Use `::` or any separator between parts
+#### x-opentp.keygen
 
-Examples:
+Tooling-defined event key generation configuration:
 
 ```yaml
-# Simple
-pattern: "{area}::{event}"
-# Result: auth::login_click
-
-# With transform
-pattern: "{area | slug}::{event | slug}"
-# Result: auth::login_click (lowercase, underscores)
+spec:
+  events:
+    x-opentp:
+      keygen:
+        template: "{area | slug}::{event | slug}"
+        transforms:
+          slug:
+            - lower
+            - trim
+            - replace:
+                from: " "
+                to: "_"
+            - truncate: 160
 ```
+
+Keygen template syntax (tooling-defined):
+
+- Placeholders are written as `{taxonomyKey}`.
+- A placeholder can optionally apply one or more transforms: `{taxonomyKey | transformId | transformId}`.
+- Whitespace around `|` is ignored.
+- Placeholder values come from the resolved taxonomy map (including path-extracted fields and composite fragments).
+- `transformId` must be defined under `spec.events.x-opentp.keygen.transforms` and is applied as a pipeline to the placeholder string value.
+
+Placeholder grammar (informal):
+
+- `{name}` or `{name | transformId (| transformId)*}`
+- `name` and `transformId` should match `/^[A-Za-z_][A-Za-z0-9_]*$/`
 
 ### spec.events.taxonomy
 
@@ -139,8 +192,7 @@ taxonomy:
     type: string
     dict: taxonomy/areas
     required: true
-    checks:
-      max-length: 50
+    maxLength: 50
   event:
     title: Event
     type: string
@@ -152,32 +204,34 @@ taxonomy:
     required: true
 ```
 
-Each taxonomy field can have:
+Each taxonomy field can use a small JSON-Schema-like constraint set, depending on `type`:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `title` | string | Display name |
-| `type` | string | `string`, `number`, or `boolean` |
-| `description` | string | Field description |
-| `required` | boolean | Whether field is required |
-| `dict` | string | Reference to a dictionary |
-| `enum` | array | Inline allowed values |
-| `pattern` | string | Pattern for composite fields (used with `fragments`) |
-| `fragments` | object | Fragment definitions for composite fields |
-| `checks` | object | Validation checks |
+- string: `minLength`, `maxLength`, `pattern`, `format` (hint)
+- number/integer: `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`
 
-Notes:
-- `enum` values must match the field `type` (`string`, `number`, or `boolean`).
-- `enum` and `dict` are mutually exclusive.
+For custom (non-portable) checks, tooling can use `x-opentp.checks`:
 
-`checks` is a free-form map of `checkId -> params`. Check IDs do not require any special prefix.
-To avoid collisions across teams, use a consistent namespace (for example `mycompany.*` or `myteam-*`).
-Tooling may warn or error on unknown check IDs depending on configuration.
+```yaml
+action:
+  title: Action
+  type: string
+  x-opentp:
+    checks:
+      myteam.custom-check: { some: params }
+```
 
-#### Composite taxonomy fields (pattern + fragments)
+#### Composite taxonomy fields (template + fragments)
 
-For a composite field, define a `pattern` and a `fragments` map to extract and validate individual parts.
+For a composite field, define a `template` and a `fragments` map to extract and validate individual parts.
 Fragment values are exposed as additional taxonomy keys (for example `taxonomy.verb`, `taxonomy.object`).
+
+Composite template syntax:
+
+- Placeholders are written as `{fragmentId}` and must reference keys in `fragments`.
+- Tooling extracts fragments by matching the composite field value against the `template`, treating placeholders as captures and all other text as literal.
+- If the value does not match the template, tooling should treat it as a validation error.
+- Each fragment id should appear exactly once in the template.
+- Fragment ids become taxonomy keys and should not collide with other taxonomy field ids.
 
 ```yaml
 taxonomy:
@@ -185,7 +239,7 @@ taxonomy:
     title: Action
     type: string
     required: true
-    pattern: "{verb} - {object}"
+    template: "{verb} - {object}"
     fragments:
       verb:
         title: Verb
@@ -207,45 +261,34 @@ payload:
     all: [web, ios, android]
     mobile: [ios, android]
   schema:
+    application_id:
+      type: string
+      dict: data/application_id
+      required: true
     event_name:
       type: string
       required: true
     event_category:
       type: string
+      required: true
+    user_id:
+      type: string
       required: false
 ```
 
-#### targets
+Notes:
+- `payload.targets` defines selector groups. `all` is required and reserved.
+- `payload.targets.all` is the canonical list of target IDs for the tracking plan. Other selector groups should only include IDs from `all`.
+- In event files, payload keys can be selectors (keys from `payload.targets`) or direct target IDs (values from `payload.targets.all`), but each target ID must be covered at most once per event (no overlaps).
+- Tooling may merge `spec.targets.<targetId>.schema` into each event payload for that target.
 
-Define target groups:
+#### Schema composition (merge/precedence)
 
-```yaml
-targets:
-  all: [web, ios, android]      # Required: defines all targets
-  mobile: [ios, android]         # Optional alias
-  desktop: [web]                 # Optional alias
-```
-
-#### schema
-
-Shared payload field definitions:
-
-```yaml
-schema:
-  event_name:
-    type: string
-    required: true
-  application_id:
-    type: string
-    dict: data/application_id
-```
-
-Event files concretize these fields under `event.payload.*.schema` and can override specific properties (for example set a fixed `value`).
-See `docs/schema/events.md` for the recommended merge rules.
+See [Semantics](../semantics.md#effective-payload-schema-merge-and-precedence) for the normative merge/precedence and conflict rules.
 
 ### spec.events.pii
 
-Configure PII metadata validation and masking conventions for payload fields.
+Configure PII metadata conventions for payload fields.
 
 In event payload field definitions, you can add:
 
@@ -255,11 +298,8 @@ In event payload field definitions, you can add:
 
 This section lets you:
 - Require `pii.kind` and/or `pii.masker` when `pii` is present
-- Restrict their values using dictionaries or checks
+- Restrict their values using dictionaries or portable constraints
 - Define additional PII metadata fields and validate them (via tooling)
-
-Maskers are tool-defined. The specification defines a built-in masker id `star` that replaces the value with asterisks.
-Additional maskers can be provided by tooling.
 
 ```yaml
 pii:
@@ -276,29 +316,13 @@ pii:
     jira:
       type: string
       required: true
-      checks:
-        pattern: "^[A-Z]+-[0-9]+$"
+      pattern: "^[A-Z]+-[0-9]+$"
 ```
 
-Notes:
-- For `pii.kind` and `pii.masker`, `enum` and `dict` are mutually exclusive.
-- For `pii.schema` fields, `enum` values must match `type`, and `enum` and `dict` are mutually exclusive.
+## Extensions (x-opentp)
 
-### spec.transforms
+This spec defines the following extension keys:
 
-Define reusable transform pipelines:
-
-```yaml
-transforms:
-  slug:
-    - lower
-    - trim
-    - replace:
-        from: " "
-        to: "_"
-    - truncate: 160
-```
-
-Each transform step is either:
-- a string step name (`lower`)
-- a single-key object with parameters (`replace: { from: " ", to: "_" }`, `truncate: 160`)
+- `spec.events.x-opentp.keygen` — key generation template and transforms (tooling-defined)
+- `x-opentp.checks` — custom validation checks (tooling-defined)
+- `x-opentp.role` — field role hint (`constant`, `attribute`, `shared`)

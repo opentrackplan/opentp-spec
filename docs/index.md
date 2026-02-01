@@ -56,12 +56,12 @@ These are independent concepts — there's no automatic mapping between them.
 
 ## Format Version
 
-Current specification version: **2025-12**
+Current specification version: **2026-01**
 
 All OpenTrackPlan files declare their format version:
 
 ```yaml
-opentp: 2025-12
+opentp: 2026-01
 ```
 
 ## File Types
@@ -71,6 +71,12 @@ opentp: 2025-12
 | `opentp.yaml` | Main configuration | [opentp.yaml](./schema/opentp-yaml.md) |
 | `events/*.yaml` | Event definitions | [Event Files](./schema/events.md) |
 | `dictionaries/*.yaml` | Reusable value lists | [Dictionaries](./schema/dictionaries.md) |
+
+## Semantics
+
+Some behavior is defined by normative semantics in addition to JSON schemas:
+
+- [Semantics](./semantics.md)
 
 ## JSON Schemas
 

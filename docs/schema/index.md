@@ -35,7 +35,18 @@ Add this comment at the top of your YAML files:
 All OpenTrackPlan files start with:
 
 ```yaml
-opentp: 2025-12
+opentp: 2026-01
 ```
 
 This declares the format version for compatibility.
+
+## Extensions
+
+The core specification is designed to be portable across tools.
+Optional tooling extensions live under the `x-opentp` key and can be ignored by implementations that do not support them.
+
+## Semantics
+
+Some behavior is defined by normative semantics in addition to JSON schemas:
+
+- [Semantics](../semantics.md)

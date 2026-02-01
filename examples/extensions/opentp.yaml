@@ -1,0 +1,80 @@
+opentp: 2026-01
+
+info:
+  title: Extensions Example
+  version: 1.0.0
+  description: Example using x-opentp extensions (tooling-defined)
+
+spec:
+  paths:
+    events:
+      root: /events
+      template: "{area}/{event}.yaml"
+
+  targets:
+    ios-ga:
+      title: iOS (GA4)
+      schema:
+        os_name:
+          type: string
+          x-opentp:
+            role: shared
+        os_version:
+          type: string
+        app_version:
+          type: string
+
+  events:
+    key:
+      pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
+
+    x-opentp:
+      keygen:
+        template: "{area | slug}::{event | slug}"
+        transforms:
+          slug:
+            - lower
+            - trim
+            - replace:
+                from: " "
+                to: "_"
+            - truncate: 160
+
+    taxonomy:
+      area:
+        title: Area
+        type: string
+        required: true
+      event:
+        title: Event
+        type: string
+        required: true
+      action:
+        title: Action
+        type: string
+        required: true
+        x-opentp:
+          checks:
+            mytool.not-empty: true
+
+    payload:
+      targets:
+        all: [ios-ga]
+      schema:
+        event_name:
+          type: string
+          required: true
+          x-opentp:
+            role: constant
+        user_id:
+          type: string
+          required: false
+          x-opentp:
+            checks:
+              mytool.starts-with: "usr_"
+        tags:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1

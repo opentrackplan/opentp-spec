@@ -7,7 +7,7 @@ Dictionaries define allowed values that can be referenced across your tracking p
 ```yaml
 # yaml-language-server: $schema=https://opentp.dev/schemas/latest/dict.schema.json
 # dictionaries/taxonomy/areas.yaml
-opentp: 2025-12
+opentp: 2026-01
 
 dict:
   type: string
@@ -32,7 +32,7 @@ dict:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | `string`, `number`, or `boolean` |
+| `type` | string | Yes | `string`, `number`, `integer`, or `boolean` |
 | `values` | array | Yes | Allowed values |
 
 ## Usage
@@ -90,7 +90,7 @@ spec:
   paths:
     events:
       root: /events
-      pattern: "{area}/{event}.yaml"
+      template: "{area}/{event}.yaml"
     dictionaries:
       root: /dictionaries
 ```
@@ -120,7 +120,7 @@ dictionaries/
 
 ```yaml
 # dictionaries/data/auth_methods.yaml
-opentp: 2025-12
+opentp: 2026-01
 
 dict:
   type: string
@@ -135,7 +135,7 @@ dict:
 
 ```yaml
 # dictionaries/data/priority_levels.yaml
-opentp: 2025-12
+opentp: 2026-01
 
 dict:
   type: number

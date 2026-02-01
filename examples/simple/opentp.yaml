@@ -1,4 +1,4 @@
-opentp: 2025-12
+opentp: 2026-01
 
 info:
   title: Simple Tracking Plan
@@ -9,11 +9,11 @@ spec:
   paths:
     events:
       root: /events
-      pattern: "{area}/{event}.yaml"
+      template: "{area}/{event}.yaml"
 
   events:
     key:
-      pattern: "{area}::{event}"
+      pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
 
     taxonomy:
       area:

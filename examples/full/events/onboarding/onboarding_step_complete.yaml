@@ -1,4 +1,4 @@
-opentp: 2025-12
+opentp: 2026-01
 
 event:
   key: onboarding::onboarding_step_complete
@@ -24,8 +24,7 @@ event:
         step_name:
           type: string
           required: true
-          checks:
-            max-length: 100
+          maxLength: 100
         is_skipped:
           type: boolean
           required: false

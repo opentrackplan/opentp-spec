@@ -237,8 +237,8 @@ Common properties:
 | Field | Description |
 |-------|-------------|
 | `type` | `string`, `number`, `integer`, `boolean`, or `array` |
-| `required` | Whether the field must exist in payload schemas |
-| `valueRequired` | Whether each event must define a fixed `value` for this field (enforced by tooling) |
+| `required` | Whether the field must be present in payload |
+| `valueRequired` | Whether this field must define a fixed `value` in the effective schema (enforced by tooling; independent of `required`) |
 | `value` | Fixed value (constant) |
 | `enum` | Allowed values (mutually exclusive with `dict` and `value`) |
 | `dict` | Dictionary reference (mutually exclusive with `enum` and `value`) |

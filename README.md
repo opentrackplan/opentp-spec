@@ -91,7 +91,7 @@ its value is extracted from the event file path and does not need to be duplicat
 Some fields are **event characteristics** that must be pinned to a single constant per event (for example `application_id`).
 To require that, set `valueRequired: true` on the base field definition. Tooling must treat it as an error if an event does not
 define a fixed `value` for that field (after merge/precedence and `$ref` resolution).
-`valueRequired: true` implies `required: true` (tooling should treat `required: false` together with `valueRequired: true` as invalid).
+`valueRequired` is independent of `required`. `required: false` + `valueRequired: true` is valid and means the field may be omitted in payload, but if present it must equal the fixed `value`.
 
 ## Documentation
 

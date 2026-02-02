@@ -288,7 +288,10 @@ Some fields are **event characteristics** that must be pinned to a single consta
 
 Set `valueRequired: true` on the base field definition. Tooling must treat it as an error if an event does not define a fixed `value` for that field (after merge/precedence and `$ref` resolution).
 
-`valueRequired: true` implies `required: true` (tooling should treat `required: false` together with `valueRequired: true` as invalid).
+`valueRequired` is independent of `required`:
+
+- `required: true` + `valueRequired: true` — required constant
+- `required: false` + `valueRequired: true` — optional constant (may be omitted in payload, but if present it must equal the fixed `value`)
 
 Example:
 

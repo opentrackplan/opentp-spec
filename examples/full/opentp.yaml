@@ -55,6 +55,7 @@ spec:
           type: string
           dict: data/application_id
           required: true
+          valueRequired: true
         event_name:
           type: string
           required: true

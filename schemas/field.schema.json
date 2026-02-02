@@ -54,6 +54,10 @@
       "type": "boolean",
       "description": "Whether this field is required"
     },
+    "valueRequired": {
+      "type": "boolean",
+      "description": "Whether this field must define a fixed value (`value`) in event payload schemas (normative semantics; enforced by tooling)"
+    },
     "value": {
       "description": "Fixed value for this field",
       "anyOf": [

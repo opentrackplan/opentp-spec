@@ -38,7 +38,10 @@ Tooling should treat these as validation errors:
 
 - Changing a field’s `type` across layers (for example base `type: string` but event `type: number`).
 - Weakening a required field (for example base `required: true` but event `required: false`).
+- Weakening a pinned-value requirement (for example base `valueRequired: true` but event `valueRequired: false`).
 - Producing an invalid merged field definition (for example ending up with both `enum` and `value` due to conflicting layers).
+- If a field has `valueRequired: true` in the **effective schema**, it must define a fixed `value` (after merge/precedence and `$ref` resolution).
+- `valueRequired: true` implies `required: true` (tooling should treat `required: false` together with `valueRequired: true` as invalid).
 
 ### Example (Partial)
 

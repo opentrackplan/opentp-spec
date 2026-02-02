@@ -282,6 +282,27 @@ Notes:
 - In event files, payload keys can be selectors (keys from `payload.targets`) or direct target IDs (values from `payload.targets.all`), but each target ID must be covered at most once per event (no overlaps).
 - Tooling may merge `spec.targets.<targetId>.schema` into each event payload for that target.
 
+#### valueRequired (pinned values per event)
+
+Some fields are **event characteristics** that must be pinned to a single constant per event (for example `application_id`).
+
+Set `valueRequired: true` on the base field definition. Tooling must treat it as an error if an event does not define a fixed `value` for that field (after merge/precedence and `$ref` resolution).
+
+`valueRequired: true` implies `required: true` (tooling should treat `required: false` together with `valueRequired: true` as invalid).
+
+Example:
+
+```yaml
+spec:
+  events:
+    payload:
+      schema:
+        application_id:
+          type: string
+          dict: data/application_id
+          valueRequired: true
+```
+
 #### Schema composition (merge/precedence)
 
 See [Semantics](../semantics.md#effective-payload-schema-merge-and-precedence) for the normative merge/precedence and conflict rules.

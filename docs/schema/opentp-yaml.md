@@ -271,6 +271,11 @@ payload:
     event_category:
       type: string
       required: true
+    dimension_1:
+      type: string
+      name: orgType
+      title: Organization Type
+      example: enterprise
     user_id:
       type: string
       required: false
@@ -281,17 +286,19 @@ Notes:
 - `payload.targets.all` is the canonical list of target IDs for the tracking plan. Other selector groups should only include IDs from `all`.
 - In event files, payload keys can be selectors (keys from `payload.targets`) or direct target IDs (values from `payload.targets.all`), but each target ID must be covered at most once per event (no overlaps).
 - Tooling may merge `spec.targets.<targetId>.schema` into each event payload for that target.
+- `name` is a logical/code-facing field name. It does not rename the canonical payload key (`dimension_1` in the example).
+- `example` is a representative value for documentation, mock data, and generators. It does not define a validation constraint.
 
 #### valueRequired (pinned values per event)
 
 Some fields are **event characteristics** that must be pinned to a single constant per event (for example `application_id`).
 
-Set `valueRequired: true` on the base field definition. Tooling must treat it as an error if an event does not define a fixed `value` for that field (after merge/precedence and `$ref` resolution).
+Set `valueRequired: true` on the base field definition.
 
 `valueRequired` is independent of `required`:
 
-- `required: true` + `valueRequired: true` — required constant
-- `required: false` + `valueRequired: true` — optional constant (may be omitted in payload, but if present it must equal the fixed `value`)
+- `required: true` + `valueRequired: true` — required constant (tooling requires a fixed `value` per event)
+- `required: false` + `valueRequired: true` — optional constant (tooling requires a fixed `value` only when the event explicitly defines the field in its payload schema)
 
 Example:
 

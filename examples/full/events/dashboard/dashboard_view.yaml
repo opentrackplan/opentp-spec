@@ -17,9 +17,13 @@ event:
         value: dashboard_view
       event_category:
         value: dashboard
+      dimension_1:
+        value: enterprise
       widgets_count:
         type: number
+        example: 7
         required: false
       has_notifications:
         type: boolean
+        example: true
         required: false

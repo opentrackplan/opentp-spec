@@ -29,6 +29,10 @@
   ],
   "additionalProperties": false,
   "properties": {
+    "name": {
+      "type": "string",
+      "description": "Logical or code-facing field name. The YAML key remains the canonical payload field key."
+    },
     "title": {
       "type": "string",
       "description": "Human-readable field name"
@@ -60,6 +64,21 @@
     },
     "value": {
       "description": "Fixed value for this field",
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "integer" },
+        { "type": "boolean" },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
+          }
+        }
+      ]
+    },
+    "example": {
+      "description": "Example value for documentation, mock data, and generators. Does not affect validation constraints.",
       "anyOf": [
         { "type": "string" },
         { "type": "number" },
@@ -187,7 +206,8 @@
       "properties": {
         "type": { "const": "string" },
         "enum": { "type": "array", "items": { "type": "string" } },
-        "value": { "type": "string" }
+        "value": { "type": "string" },
+        "example": { "type": "string" }
       },
       "not": {
         "anyOf": [
@@ -209,7 +229,8 @@
       "properties": {
         "type": { "const": "number" },
         "enum": { "type": "array", "items": { "type": "number" } },
-        "value": { "type": "number" }
+        "value": { "type": "number" },
+        "example": { "type": "number" }
       },
       "not": {
         "anyOf": [
@@ -230,7 +251,8 @@
       "properties": {
         "type": { "const": "integer" },
         "enum": { "type": "array", "items": { "type": "integer" } },
-        "value": { "type": "integer" }
+        "value": { "type": "integer" },
+        "example": { "type": "integer" }
       },
       "not": {
         "anyOf": [
@@ -251,7 +273,8 @@
       "properties": {
         "type": { "const": "boolean" },
         "enum": { "type": "array", "items": { "type": "boolean" } },
-        "value": { "type": "boolean" }
+        "value": { "type": "boolean" },
+        "example": { "type": "boolean" }
       },
       "not": {
         "anyOf": [
@@ -277,6 +300,12 @@
       "properties": {
         "type": { "const": "array" },
         "value": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
+          }
+        },
+        "example": {
           "type": "array",
           "items": {
             "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]

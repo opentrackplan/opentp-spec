@@ -13,4 +13,5 @@ event:
       auth_method:
         type: string
         enum: [email, google, github]
+        example: email
         required: true

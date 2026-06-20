@@ -236,10 +236,14 @@ Common properties:
 
 | Field | Description |
 |-------|-------------|
+| `name` | Logical or code-facing field name. The YAML key remains the canonical payload field key |
+| `title` | Human-readable field title |
+| `description` | Field description |
 | `type` | `string`, `number`, `integer`, `boolean`, or `array` |
 | `required` | Whether the field must be present in payload |
 | `valueRequired` | Whether this field must define a fixed `value` in the effective schema (enforced by tooling; independent of `required`) |
 | `value` | Fixed value (constant) |
+| `example` | Example value for documentation, mock data, and generators. Does not affect validation constraints |
 | `enum` | Allowed values (mutually exclusive with `dict` and `value`) |
 | `dict` | Dictionary reference (mutually exclusive with `enum` and `value`) |
 | `pii` | PII metadata (reserved keys: `kind`, `masker`; extra keys allowed) |
@@ -267,15 +271,33 @@ event_name:
 ```yaml
 email:
   type: string
+  example: user@example.com
   format: email
   maxLength: 320
 ```
+
+**Payload slot with logical name**
+
+Use `name` when the payload field key is a transport or vendor slot, but the field has a clearer logical/code-facing name:
+
+```yaml
+dimension_1:
+  type: string
+  name: orgType
+  title: Organization Type
+  description: Logical organization type stored in analytics slot dimension_1.
+  enum: [startup, enterprise, agency]
+  example: enterprise
+```
+
+`dimension_1` remains the canonical payload field key. `name` does not rename the payload field or change validation paths.
 
 **Array of scalar items**
 
 ```yaml
 tags:
   type: array
+  example: [auth, login]
   uniqueItems: true
   items:
     type: string

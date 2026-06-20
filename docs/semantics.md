@@ -40,8 +40,10 @@ Tooling should treat these as validation errors:
 - Weakening a required field (for example base `required: true` but event `required: false`).
 - Weakening a pinned-value requirement (for example base `valueRequired: true` but event `valueRequired: false`).
 - Producing an invalid merged field definition (for example ending up with both `enum` and `value` due to conflicting layers).
-- If a field has `valueRequired: true` in the **effective schema**, it must define a fixed `value` (after merge/precedence and `$ref` resolution).
 - `valueRequired` is independent of `required`. `required: false` + `valueRequired: true` is valid and means the field may be omitted in payload, but if present it must equal the fixed `value`.
+- If a field has `valueRequired: true` in the **effective schema**, tooling must require a fixed `value` (after merge/precedence and `$ref` resolution) when either:
+  - the field is required (`required: true` in the effective schema), or
+  - the event explicitly defines the field in its payload schema for that target/version.
 
 ### Example (Partial)
 

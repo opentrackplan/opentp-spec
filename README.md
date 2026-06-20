@@ -54,6 +54,11 @@ spec:
         event_name:
           type: string
           required: true
+        dimension_1:
+          type: string
+          name: orgType
+          title: Organization Type
+          example: enterprise
 ```
 
 Create an event in `events/auth/login.yaml`:
@@ -74,6 +79,7 @@ event:
       auth_method:
         type: string
         enum: [email, google, github]
+        example: email
       user_id:
         type: string
         pii:
@@ -86,12 +92,19 @@ event:
 Note: if a taxonomy field is present in `spec.paths.events.template` (for example `{area}/{event}.yaml`),
 its value is extracted from the event file path and does not need to be duplicated in `event.taxonomy`.
 
+Use `name` when the payload key is a transport or vendor slot, but the field has a clearer logical/code-facing name.
+For example, `dimension_1` can keep the canonical payload key while declaring `name: orgType`.
+Use `example` for a representative value used by documentation, mock data, and generators.
+
 ### Pinned values per event (`valueRequired`)
 
 Some fields are **event characteristics** that must be pinned to a single constant per event (for example `application_id`).
-To require that, set `valueRequired: true` on the base field definition. Tooling must treat it as an error if an event does not
-define a fixed `value` for that field (after merge/precedence and `$ref` resolution).
-`valueRequired` is independent of `required`. `required: false` + `valueRequired: true` is valid and means the field may be omitted in payload, but if present it must equal the fixed `value`.
+To require that, set `valueRequired: true` on the base field definition.
+
+`valueRequired` is independent of `required`:
+
+- `required: true` + `valueRequired: true` — required constant (tooling requires a fixed `value` per event).
+- `required: false` + `valueRequired: true` — optional constant (tooling requires a fixed `value` only when the event explicitly defines the field in its payload schema).
 
 ## Documentation
 

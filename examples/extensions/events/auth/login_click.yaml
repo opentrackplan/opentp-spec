@@ -1,7 +1,8 @@
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: auth::login_click
+  x-acme-team: identity
 
   taxonomy:
     action: User clicks the login button
@@ -10,10 +11,7 @@ event:
     schema:
       event_name:
         value: login_click
-        x-opentp:
-          role: constant
       user_id:
-        type: string
-        x-opentp:
-          checks:
-            mytool.starts-with: "usr_"
+        example: usr_42
+      tags:
+        example: [returning, premium]

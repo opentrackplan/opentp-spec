@@ -1,9 +1,11 @@
-opentp: 2026-01
+opentp: 2026-09
+x-acme-team: analytics-platform
 
 info:
   title: Extensions Example
   version: 1.0.0
-  description: Example using x-opentp extensions (tooling-defined)
+  description: Example with vendor extensions (x-*) and tool-defined checks
+  x-acme-team: analytics-platform
 
 spec:
   paths:
@@ -12,33 +14,33 @@ spec:
       template: "{area}/{event}.yaml"
 
   targets:
+    all:
+      schema:
+        event_name:
+          type: string
+          policy: fixed
     ios-ga:
       title: iOS (GA4)
+      x-acme-team: mobile-platform
       schema:
         os_name:
           type: string
-          x-opentp:
-            role: shared
         os_version:
           type: string
         app_version:
           type: string
+          x-acme-team: mobile-release
+
+  # Portable named check: defined in the plan, understood by every tool
+  checks:
+    usr-prefixed:
+      title: Prefixed user id
+      description: User ids start with usr_ followed by lowercase letters or digits
+      pattern: "^usr_[a-z0-9]+$"
 
   events:
     key:
       pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
-
-    x-opentp:
-      keygen:
-        template: "{area | slug}::{event | slug}"
-        transforms:
-          slug:
-            - lower
-            - trim
-            - replace:
-                from: " "
-                to: "_"
-            - truncate: 160
 
     taxonomy:
       area:
@@ -53,28 +55,24 @@ spec:
         title: Action
         type: string
         required: true
-        x-opentp:
-          checks:
-            mytool.not-empty: true
+        # Tool-defined check: tools that do not know it ignore it (and should say so)
+        checks:
+          mytool.not-empty: true
+        x-acme-team: product
 
     payload:
       targets:
         all: [ios-ga]
       schema:
-        event_name:
-          type: string
-          required: true
-          x-opentp:
-            role: constant
         user_id:
           type: string
-          required: false
-          x-opentp:
-            checks:
-              mytool.starts-with: "usr_"
+          checks:
+            usr-prefixed: true
+            mytool.starts-with: usr_
         tags:
           type: array
           uniqueItems: true
           items:
             type: string
-            minLength: 1
+            enum: [new, returning, premium]
+          x-acme-team: growth

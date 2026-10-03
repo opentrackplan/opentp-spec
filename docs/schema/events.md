@@ -6,7 +6,7 @@ Event files define individual analytics events with taxonomy metadata and payloa
 
 ```yaml
 # yaml-language-server: $schema=https://opentp.dev/schemas/latest/event.schema.json
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: auth::login_button_click
@@ -26,13 +26,12 @@ event:
         schema:
           event_name:
             value: login_button_click
-            x-opentp:
-              role: constant
           auth_method:
-            type: string
             enum: [email, google, github]
             required: true
 ```
+
+`event_name` and `auth_method` are defined in `opentp.yaml` (as common fields or in the catalog), so the event only pins `event_name` and narrows `auth_method`.
 
 ## Reference
 
@@ -40,8 +39,9 @@ event:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `opentp` | string | Yes | Format version |
+| `opentp` | string | Yes | Format version: `2026-09` |
 | `event` | object | Yes | Event definition |
+| `x-*` | any | No | Extensions |
 
 ### event
 
@@ -53,13 +53,15 @@ event:
 | `payload` | object | Yes | Analytics data |
 | `aliases` | array | No | Previous event keys |
 | `ignore` | array | No | Skip specific validations |
+| `x-*` | any | No | Extensions (for example `x-acme-team`) |
+
+`x-*` keys are also allowed on `lifecycle`, `aliases[]`, `aliases[].deprecated`, `ignore[]`, payload versions, `meta` and `meta.deprecated`. `x-opentp` is invalid everywhere (see [Extensions](../semantics.md#extensions)).
 
 ### event.key
 
 `event.key` is an opaque string identifier that must be unique within the tracking plan.
 
-Portable constraints for keys can be configured in `opentp.yaml` via `spec.events.key` (constraints only).
-Tooling may also support key generation via `spec.events.x-opentp.keygen` (extension).
+Portable constraints for keys can be configured in `opentp.yaml` via `spec.events.key` (constraints only). Key generation is not part of the specification (see [opentp.yaml](./opentp-yaml.md#eventskey-constraints-only)).
 
 ### event.lifecycle
 
@@ -79,9 +81,11 @@ Lifecycle fields:
 | Field | Type | Description |
 |-------|------|-------------|
 | `status` | string | `active`, `deprecated`, or `draft` |
-| `deprecatedAt` | string (date) | Date when the event was deprecated (ISO 8601) |
+| `deprecatedAt` | string (date) | Date when the event was deprecated (RFC 3339 full-date, quoted: `"2025-01-31"`) |
 | `deprecatedReason` | string | Reason for deprecation |
 | `replacedBy` | string | Key of the replacement event |
+
+`lifecycle.status` is documentation: it does not exempt the event from any rule. A deprecated event still describes hits that old builds send.
 
 ### event.taxonomy
 
@@ -99,7 +103,7 @@ its value is extracted from the event file path and does not need to be duplicat
 
 `payload` supports two forms:
 
-1) **Implicit `all` selector** (simplest):
+1) **Implicit form** (simplest): `payload.schema` (or `payload.current` for versions) applies to every target in `spec.events.payload.targets.all`:
 
 ```yaml
 payload:
@@ -128,22 +132,11 @@ payload:
 Resolution rules (no overlaps):
 
 - Each `payload.<key>` expands to one or more target IDs.
-- In a single event file, a target ID must be covered at most once (no overlaps between selectors/targets). If a target is matched multiple times, tooling should treat it as an error (ambiguous payload definition).
+- In a single event file, a target ID must be covered at most once (no overlaps between selectors/targets). A target matched by more than one key is an error (ambiguous payload definition).
+- A target that no key covers is a target on which the event is not sent. This is valid.
 - If you want one payload definition to apply to every target, use the implicit form (`payload.schema` / `payload.current`), which applies to `payload.targets.all`.
 
-#### Canonical resolution algorithm (selectors → targets)
-
-Given an event file and its corresponding `opentp.yaml`:
-
-1) Read `spec.events.payload.targets`. `all` is required and reserved.
-2) Collect `allTargets = spec.events.payload.targets.all` (canonical list of target IDs).
-3) If `event.payload` is in implicit form (`payload.schema` or `payload.current` at the top level), apply that payload definition to every target in `allTargets` and stop.
-4) Otherwise, treat `event.payload` as map form and iterate its keys.
-5) For each `payloadKey`:
-   - If `payloadKey` exists in `spec.events.payload.targets`, expand it to that selector’s list of target IDs.
-   - Else if `payloadKey` is present in `allTargets`, treat it as a direct target ID.
-   - Else: error (unknown selector/target).
-6) Ensure each target ID is assigned at most once across all payload keys. If any target appears more than once: error (ambiguous overlap).
+The normative selector → target algorithm is in [Semantics](../semantics.md#payload-resolution).
 
 For each selector/target payload definition you can choose:
 
@@ -176,19 +169,20 @@ payload:
           - Added auth_method
       schema:
         auth_method:
-          type: string
           enum: [email, google]
 ```
 
 Aliases (tags) and `$ref`:
 
 - Version keys are entries with object values (payload versions); aliases/tags are entries with string values pointing to other keys.
-- `current` may be a version key or an alias/tag; it must resolve to a version key.
-- `$ref` derives schema from another version (same payload key or `otherPayloadKey::versionKey`). See [Semantics](../semantics.md#versioned-payloads-current-aliases-and-ref) for the full resolution rules.
+- `current` may be a version key or an alias/tag; it must resolve to a version key. It is what new code sends; every version remains a valid shape of the event.
+- `$ref` derives schema from another version (same payload key or `otherPayloadKey::versionKey`). A derived version may change values freely, but not a field's `type`, and it cannot weaken `required`. See [Semantics](../semantics.md#derived-versions-ref) for the full resolution rules.
+- A version marked `meta.deprecated` is exempt from `policy`: use it for history, such as an old build that did not send a field yet.
+- Quote version keys and alias values that look like numbers (`"1.0"`).
 
 #### Effective payload schema (merge/precedence)
 
-See [Semantics](../semantics.md#effective-payload-schema-merge-and-precedence) for the normative merge/precedence and conflict rules.
+See [Semantics](../semantics.md#layers-and-merge) for the normative merge rules (catalog, common fields, event), presence and policy.
 
 #### Do / Don’t
 
@@ -207,18 +201,15 @@ payload:
 payload:
   ios-ga:
     schema:
-      ios_extra:
-        type: string
-        required: false
+      ios_extra: {}
   android-ga:
     schema:
-      android_extra:
-        type: string
-        required: false
+      android_extra: {}
 ```
 
 **Don’t: define overlapping payload keys**
 
+<!-- invalid: covered more than once -->
 ```yaml
 # Ambiguous: ios/android are covered by both keys
 payload:
@@ -230,47 +221,63 @@ payload:
 
 ### Payload field definition
 
-Payload fields use the shared `Field` schema (`field.schema.json`).
+Payload fields use the shared `Field` schema (`field.schema.json`). Every field in an event must be a catalog field (`spec.events.payload.schema`) or a common field of each target the payload covers (`spec.targets`); anything else is an error (closed vocabulary).
 
-Common properties:
+Event fields **inherit** their definition from the catalog and the common fields, so `type` is optional and an event writes only what is specific to it. `{}` lists a field unchanged.
 
 | Field | Description |
 |-------|-------------|
-| `name` | Logical or code-facing field name. The YAML key remains the canonical payload field key |
+| `name` | Code-facing field name (for example a generated parameter name). The YAML key remains the canonical payload field key; code-facing names are unique within an event version |
 | `title` | Human-readable field title |
 | `description` | Field description |
-| `type` | `string`, `number`, `integer`, `boolean`, or `array` |
-| `required` | Whether the field must be present in payload |
-| `valueRequired` | Whether this field must define a fixed `value` in the effective schema (enforced by tooling; independent of `required`) |
-| `value` | Fixed value (constant) |
-| `example` | Example value for documentation, mock data, and generators. Does not affect validation constraints |
-| `enum` | Allowed values (mutually exclusive with `dict` and `value`) |
-| `dict` | Dictionary reference (mutually exclusive with `enum` and `value`) |
+| `type` | `string`, `number`, `integer`, `boolean`, or `array`. Optional: inherited; if written, it must equal the inherited type |
+| `required` | `true`: the field is present in every hit. An event cannot set `false` when a base layer says `true`, or when the field has a `value` or `policy: restricted`/`fixed` |
+| `value` | Fixed value: the field is always present with this value (must be allowed by the base `enum`/`dict`, and cannot change a fixed base value) |
+| `enum` | Allowed values: at least one, a subset of the base `enum`/`dict` (mutually exclusive with `dict` and `value`). Not on array fields: use `items.enum` |
+| `dict` | Dictionary reference whose values are a subset of the base `enum`/`dict` (mutually exclusive with `enum` and `value`). Not on array fields: use `items.dict` |
+| `example` | Example value for documentation, mock data, and generators. It must satisfy the field |
 | `pii` | PII metadata (reserved keys: `kind`, `masker`; extra keys allowed) |
-| `x-opentp` | Tooling extensions (custom checks and role hints) |
+| `checks` | Checks by id: `{ <checkId>: <params> }` (see [Checks](../semantics.md#checks)) |
+| `x-*` | Extensions |
 
-Constraints (JSON-Schema-like, portable):
+Not allowed in event files: `policy` (it belongs to catalog and common fields), `valueRequired` and `x-opentp` (removed in 2026-09).
 
-- string: `minLength`, `maxLength`, `pattern`, `format` (hint)
+Constraints (JSON-Schema-like, portable; they add to the inherited ones):
+
+- string: `minLength`, `maxLength`, `pattern`, `format`
 - number/integer: `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`
-- array: `items` (scalar-only), `minItems`, `maxItems`, `uniqueItems`
+- array: `items` (scalar-only; `items.enum` or `items.dict` restrict the elements), `minItems`, `maxItems`, `uniqueItems`
 
-Examples:
+Each group applies only to its type, and so do top-level `enum` and `dict` (not on arrays). An event field that inherits its type is checked against the inherited type, so `minLength` on an integer field, `items` on a string field or `enum` on an array field is an error that `ignore` cannot silence (see [Effective field rules](../semantics.md#effective-field-rules)).
+
+Examples (each field is defined in the catalog or as a common field):
+
+**List a catalog field unchanged**
+
+```yaml
+screen_name: {}
+```
 
 **Constant value**
 
 ```yaml
 event_name:
   value: login_click
-  x-opentp:
-    role: constant
+```
+
+**Narrow an enum and make the field required**
+
+```yaml
+auth_method:
+  enum: [email, google]
+  required: true
+  example: email
 ```
 
 **String with constraints**
 
 ```yaml
 email:
-  type: string
   example: user@example.com
   format: email
   maxLength: 320
@@ -282,7 +289,6 @@ Use `name` when the payload field key is a transport or vendor slot, but the fie
 
 ```yaml
 dimension_1:
-  type: string
   name: orgType
   title: Organization Type
   description: Logical organization type stored in analytics slot dimension_1.
@@ -296,9 +302,17 @@ dimension_1:
 
 ```yaml
 tags:
-  type: array
   example: [auth, login]
   uniqueItems: true
+  items:
+    enum: [auth, login, signup]
+```
+
+A catalog definition of the same array field needs `type: array` and `items` with `type`:
+
+```yaml
+tags:
+  type: array
   items:
     type: string
     minLength: 1
@@ -313,6 +327,15 @@ Two keys are reserved and understood by tooling:
 - `pii.masker` — masker implementation id
 
 Additional `pii.*` keys are allowed for governance and can be validated by tooling using `spec.events.pii.schema` from `opentp.yaml`.
+
+```yaml
+user_id:
+  pii:
+    kind: user_id
+    masker: star
+    owner: analytics
+    jira: ANALYTICS-123
+```
 
 The specification defines a built-in masker id `star` that replaces the value with asterisks.
 Other masker ids are tooling-defined.
@@ -331,18 +354,23 @@ aliases:
 
 ### event.ignore
 
-Skip specific validations:
+Skip specific checks for this event. `reason` is optional but recommended.
 
 ```yaml
 ignore:
   - path: payload::legacy_field
     reason: Temporary field for migration
+  - path: payload.event_category
+    reason: Page views have no category
 ```
 
-Common path conventions (tooling-defined):
+Path forms (normative core; tools may support more):
 
-- `event.key` (or `key`) — skip key validation checks
-- `taxonomy.<field>` — skip validation for a taxonomy field
-- `payload::\<field>` — skip validation for a payload field across all selectors/targets
-- `payload.<target>.schema.<field>` — skip validation for a field on a specific target
-- `payload.<target>.<version>.schema.<field>` — skip validation for a field on a specific target+version
+- `key` or `event.key` — key checks (constraints and tool key checks such as a generated-key mismatch)
+- `opentp` — the version check of this file
+- `taxonomy.<field>` — checks on a taxonomy field or fragment (on a composite field, also its fragments)
+- `payload::<field>` — field-level checks of a payload field on every target and version (the only form for a field name that contains `.`)
+- `payload.<field>` — the same (later segments, such as `payload.<field>.value`, are ignored)
+- `payload.<target>.schema.<field>` or `payload.<target>.<version>.schema.<field>` — the same: the field after the first `.schema.` is silenced on every target and version
+
+Unknown fields, `policy` in an event, contradictions of `required: false`, type conflicts (including keywords that do not fit the inherited type), changes to a fixed value, YAML merge keys (`<<`), payload resolution errors and problems in `opentp.yaml` can never be ignored. An ignore path that matches nothing is not an error. Full rules: [Ignore](../semantics.md#ignore).

@@ -1,10 +1,13 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2026-01/opentp.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://opentp.dev/schemas/2026-09/opentp.schema.json",
   "title": "OpenTrackPlan Configuration",
-  "description": "Schema for opentp.yaml - the main configuration file",
+  "description": "Schema for opentp.yaml - the main configuration file of a tracking plan",
   "type": "object",
   "required": ["opentp", "info", "spec"],
+  "patternProperties": {
+    "^x-": {}
+  },
   "additionalProperties": false,
   "properties": {
     "opentp": {
@@ -14,6 +17,9 @@
       "type": "object",
       "description": "Project metadata",
       "required": ["title", "version"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "title": {
@@ -26,7 +32,7 @@
         },
         "version": {
           "type": "string",
-          "description": "Project version"
+          "description": "Project version (quote numbers such as \"1.0\")"
         },
         "contact": {
           "type": "array",
@@ -34,6 +40,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     },
@@ -41,12 +51,18 @@
       "type": "object",
       "description": "Specification",
       "required": ["paths", "events"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "paths": {
           "type": "object",
           "description": "File paths configuration",
           "required": ["events"],
+          "patternProperties": {
+            "^x-": {}
+          },
           "additionalProperties": false,
           "properties": {
             "events": {
@@ -54,27 +70,41 @@
             },
             "dictionaries": {
               "$ref": "#/definitions/dictionariesPathConfig"
+            },
+            "x-opentp": {
+              "not": {},
+              "description": "Removed in 2026-09; see CHANGELOG.md"
             }
           }
         },
         "targets": {
           "type": "object",
-          "description": "Target definitions (tooling-defined semantics). Keys are target IDs (e.g. 'ios-ga').",
+          "description": "Common fields per target. Keys are 'all' (fields common to every target) or target ids from spec.events.payload.targets.all (checked by validators).",
           "additionalProperties": {
             "$ref": "#/definitions/targetConfig"
           }
+        },
+        "checks": {
+          "type": "object",
+          "description": "Portable named checks: { <checkId>: PortableCheck }. In the plan, checks: { <checkId>: true } applies one.",
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9_.-]*$": {
+              "$ref": "#/definitions/portableCheck"
+            }
+          },
+          "additionalProperties": false
         },
         "events": {
           "type": "object",
           "description": "Events configuration",
           "required": ["taxonomy", "payload"],
+          "patternProperties": {
+            "^x-": {}
+          },
           "additionalProperties": false,
           "properties": {
             "key": {
               "$ref": "#/definitions/eventKeyConstraints"
-            },
-            "x-opentp": {
-              "$ref": "#/definitions/xOpentpEvents"
             },
             "taxonomy": {
               "type": "object",
@@ -85,14 +115,29 @@
             },
             "payload": {
               "type": "object",
-              "description": "Payload configuration",
-              "required": ["targets", "schema"],
+              "description": "Payload configuration: targets and the field catalog",
+              "required": ["targets"],
+              "patternProperties": {
+                "^x-": {}
+              },
               "additionalProperties": false,
               "properties": {
                 "targets": {
                   "type": "object",
-                  "description": "Target definitions. 'all' is required",
+                  "description": "Target ids and selector groups. 'all' is required and reserved: the canonical list of target ids. Other keys are selector groups of ids from 'all'.",
                   "required": ["all"],
+                  "properties": {
+                    "all": {
+                      "type": "array",
+                      "description": "Every target id of the plan",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
                   "additionalProperties": {
                     "type": "array",
                     "items": {
@@ -102,19 +147,35 @@
                 },
                 "schema": {
                   "type": "object",
-                  "description": "Payload fields schema",
+                  "description": "Field catalog: every field that events may use (being in the catalog does not put a field into an event). Optional; defaults to {}.",
                   "additionalProperties": {
-                    "$ref": "field.schema.json"
+                    "$ref": "field.schema.json#/definitions/catalogField"
                   }
+                },
+                "x-opentp": {
+                  "not": {},
+                  "description": "Removed in 2026-09; see CHANGELOG.md"
                 }
               }
             },
             "pii": {
               "$ref": "#/definitions/piiConfig"
+            },
+            "x-opentp": {
+              "not": {},
+              "description": "Removed in 2026-09 (key generation is tool configuration, e.g. opentp.cli.yaml in the reference CLI); see CHANGELOG.md"
             }
           }
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
+    },
+    "x-opentp": {
+      "not": {},
+      "description": "Removed in 2026-09; see CHANGELOG.md"
     }
   },
   "definitions": {
@@ -122,15 +183,22 @@
       "type": "object",
       "description": "Path configuration for event files",
       "required": ["root", "template"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "root": {
           "type": "string",
-          "description": "Root directory path"
+          "description": "Root directory, relative to the directory of opentp.yaml (a leading '/' means that directory)"
         },
         "template": {
           "type": "string",
           "description": "Path template using taxonomy fields (e.g. '{area}/{event}.yaml')"
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     },
@@ -138,86 +206,58 @@
       "type": "object",
       "description": "Path configuration for dictionary files",
       "required": ["root"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "root": {
           "type": "string",
-          "description": "Root directory path"
-        }
-      }
-    },
-    "xOpentpField": {
-      "type": "object",
-      "description": "OpenTrackPlan extensions (tooling-defined).",
-      "additionalProperties": false,
-      "properties": {
-        "role": {
-          "type": "string",
-          "description": "Field role hint for tooling (does not affect schema validation).",
-          "enum": ["constant", "attribute", "shared"]
+          "description": "Root directory, relative to the directory of opentp.yaml (a leading '/' means that directory)"
         },
-        "checks": {
-          "type": "object",
-          "description": "Tooling-defined validation checks (non-portable).",
-          "additionalProperties": true
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     },
     "eventKeyConstraints": {
       "type": "object",
-      "description": "Constraints for event.key values (opaque string identifier). No key generation is defined in the core spec.",
+      "description": "Constraints for event.key values (opaque string identifier). Key generation is not part of the specification.",
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "minLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Minimum key length"
+          "description": "Minimum key length in Unicode code points"
         },
         "maxLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Maximum key length"
+          "description": "Maximum key length in Unicode code points"
         },
         "pattern": {
           "type": "string",
-          "description": "Regex pattern for event keys"
+          "description": "Regular expression for event keys (ECMA-262 with Unicode, not anchored)"
         },
         "format": {
-          "type": "string",
-          "description": "String format hint (tooling may validate)",
-          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
-        }
-      }
-    },
-    "xOpentpEvents": {
-      "type": "object",
-      "description": "OpenTrackPlan extensions for spec.events (tooling-defined).",
-      "additionalProperties": false,
-      "properties": {
-        "keygen": {
-          "type": "object",
-          "description": "Tooling-defined event key generation config (reference CLI can validate and auto-fix keys).",
-          "required": ["template"],
-          "additionalProperties": false,
-          "properties": {
-            "template": {
-              "type": "string",
-              "description": "Template for generating event keys from taxonomy values (e.g. '{area | slug}::{event | slug}')."
-            },
-            "transforms": {
-              "type": "object",
-              "description": "Transform definitions used by keygen templates",
-              "additionalProperties": {
-                "$ref": "#/definitions/transform"
-              }
-            }
-          }
+          "$ref": "field.schema.json#/definitions/format"
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     },
     "targetConfig": {
       "type": "object",
-      "description": "Target configuration (per target ID, e.g. 'ios-ga').",
+      "description": "Target configuration: 'all' or a target id",
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "title": {
@@ -230,17 +270,95 @@
         },
         "schema": {
           "type": "object",
-          "description": "Base/shared schema for this target (merged into every event payload for this target).",
+          "description": "Common fields: part of every event on this target (or on every target, for 'all'). Merged catalog -> all -> <targetId> -> event.",
           "additionalProperties": {
             "$ref": "field.schema.json"
           }
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
+    },
+    "portableCheck": {
+      "type": "object",
+      "description": "A portable named check: built only from portable keywords (at least one). A value passes when it satisfies every keyword that applies to its type.",
+      "patternProperties": {
+        "^x-": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Human-readable check name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Check description"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum string length in Unicode code points (applies to strings)"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum string length in Unicode code points (applies to strings)"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regular expression (applies to strings)"
+        },
+        "format": {
+          "$ref": "field.schema.json#/definitions/format"
+        },
+        "minimum": {
+          "type": "number",
+          "description": "Minimum value (applies to numbers)"
+        },
+        "maximum": {
+          "type": "number",
+          "description": "Maximum value (applies to numbers)"
+        },
+        "exclusiveMinimum": {
+          "type": "number",
+          "description": "Exclusive minimum (applies to numbers)"
+        },
+        "exclusiveMaximum": {
+          "type": "number",
+          "description": "Exclusive maximum (applies to numbers)"
+        },
+        "multipleOf": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Numeric multiple (applies to numbers)"
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
+        }
+      },
+      "anyOf": [
+        { "required": ["minLength"] },
+        { "required": ["maxLength"] },
+        { "required": ["pattern"] },
+        { "required": ["format"] },
+        { "required": ["minimum"] },
+        { "required": ["maximum"] },
+        { "required": ["exclusiveMinimum"] },
+        { "required": ["exclusiveMaximum"] },
+        { "required": ["multipleOf"] }
+      ]
     },
     "taxonomyField": {
       "type": "object",
       "description": "Taxonomy field definition",
       "required": ["title", "type"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "title": {
@@ -266,30 +384,32 @@
         },
         "enum": {
           "type": "array",
-          "description": "Inline list of allowed values"
+          "description": "Inline list of allowed values (at least one)",
+          "minItems": 1,
+          "items": {
+            "$ref": "field.schema.json#/definitions/scalar"
+          }
         },
         "dict": {
           "type": "string",
-          "description": "Reference to dictionary (e.g., 'taxonomy/apps')"
+          "description": "Reference to dictionary (e.g., 'taxonomy/areas')"
         },
         "minLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Minimum string length (type: string)"
+          "description": "Minimum string length in Unicode code points (type: string)"
         },
         "maxLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Maximum string length (type: string)"
+          "description": "Maximum string length in Unicode code points (type: string)"
         },
         "pattern": {
           "type": "string",
-          "description": "Regex pattern constraint (type: string)"
+          "description": "Regular expression (type: string)"
         },
         "format": {
-          "type": "string",
-          "description": "String format hint (tooling may validate)",
-          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+          "$ref": "field.schema.json#/definitions/format"
         },
         "minimum": {
           "type": "number",
@@ -320,17 +440,21 @@
             "$ref": "#/definitions/taxonomyField"
           }
         },
+        "checks": {
+          "$ref": "field.schema.json#/definitions/checks"
+        },
         "x-opentp": {
-          "$ref": "#/definitions/xOpentpField"
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       },
       "allOf": [
         {
-          "not": {
-            "required": ["enum", "dict"]
-          }
+          "description": "enum and dict are mutually exclusive",
+          "not": { "required": ["enum", "dict"] }
         },
         {
+          "description": "template and fragments are used together",
           "oneOf": [
             {
               "not": {
@@ -347,7 +471,7 @@
             {
               "properties": {
                 "type": { "const": "string" },
-                "enum": { "type": "array", "items": { "type": "string" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "string" } }
               },
               "not": {
                 "anyOf": [
@@ -362,7 +486,7 @@
             {
               "properties": {
                 "type": { "const": "number" },
-                "enum": { "type": "array", "items": { "type": "number" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "number" } }
               },
               "not": {
                 "anyOf": [
@@ -378,7 +502,7 @@
             {
               "properties": {
                 "type": { "const": "integer" },
-                "enum": { "type": "array", "items": { "type": "integer" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "integer" } }
               },
               "not": {
                 "anyOf": [
@@ -394,7 +518,7 @@
             {
               "properties": {
                 "type": { "const": "boolean" },
-                "enum": { "type": "array", "items": { "type": "boolean" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "boolean" } }
               },
               "not": {
                 "anyOf": [
@@ -419,6 +543,9 @@
     "piiConfig": {
       "type": "object",
       "description": "PII metadata configuration for payload fields",
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -433,12 +560,19 @@
           "additionalProperties": {
             "$ref": "#/definitions/piiMetaField"
           }
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     },
     "piiReservedFieldConfig": {
       "type": "object",
       "description": "Configuration for reserved PII fields (pii.kind, pii.masker)",
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "title": {
@@ -455,7 +589,8 @@
         },
         "enum": {
           "type": "array",
-          "description": "Inline list of allowed values",
+          "description": "Inline list of allowed values (at least one)",
+          "minItems": 1,
           "items": {
             "type": "string"
           }
@@ -467,31 +602,32 @@
         "minLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Minimum string length"
+          "description": "Minimum string length in Unicode code points"
         },
         "maxLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Maximum string length"
+          "description": "Maximum string length in Unicode code points"
         },
         "pattern": {
           "type": "string",
-          "description": "Regex pattern constraint"
+          "description": "Regular expression"
         },
         "format": {
-          "type": "string",
-          "description": "String format hint (tooling may validate)",
-          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+          "$ref": "field.schema.json#/definitions/format"
+        },
+        "checks": {
+          "$ref": "field.schema.json#/definitions/checks"
         },
         "x-opentp": {
-          "$ref": "#/definitions/xOpentpField"
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       },
       "allOf": [
         {
-          "not": {
-            "required": ["enum", "dict"]
-          }
+          "description": "enum and dict are mutually exclusive",
+          "not": { "required": ["enum", "dict"] }
         }
       ]
     },
@@ -499,6 +635,9 @@
       "type": "object",
       "description": "Additional PII metadata field definition",
       "required": ["type"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "title": {
@@ -520,7 +659,11 @@
         },
         "enum": {
           "type": "array",
-          "description": "Inline list of allowed values"
+          "description": "Inline list of allowed values (at least one)",
+          "minItems": 1,
+          "items": {
+            "$ref": "field.schema.json#/definitions/scalar"
+          }
         },
         "dict": {
           "type": "string",
@@ -529,21 +672,19 @@
         "minLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Minimum string length (type: string)"
+          "description": "Minimum string length in Unicode code points (type: string)"
         },
         "maxLength": {
           "type": "integer",
           "minimum": 0,
-          "description": "Maximum string length (type: string)"
+          "description": "Maximum string length in Unicode code points (type: string)"
         },
         "pattern": {
           "type": "string",
-          "description": "Regex pattern constraint (type: string)"
+          "description": "Regular expression (type: string)"
         },
         "format": {
-          "type": "string",
-          "description": "String format hint (tooling may validate)",
-          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+          "$ref": "field.schema.json#/definitions/format"
         },
         "minimum": {
           "type": "number",
@@ -566,22 +707,25 @@
           "exclusiveMinimum": 0,
           "description": "Numeric multiple constraint (type: number | integer)"
         },
+        "checks": {
+          "$ref": "field.schema.json#/definitions/checks"
+        },
         "x-opentp": {
-          "$ref": "#/definitions/xOpentpField"
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       },
       "allOf": [
         {
-          "not": {
-            "required": ["enum", "dict"]
-          }
+          "description": "enum and dict are mutually exclusive",
+          "not": { "required": ["enum", "dict"] }
         },
         {
           "oneOf": [
             {
               "properties": {
                 "type": { "const": "string" },
-                "enum": { "type": "array", "items": { "type": "string" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "string" } }
               },
               "not": {
                 "anyOf": [
@@ -596,7 +740,7 @@
             {
               "properties": {
                 "type": { "const": "number" },
-                "enum": { "type": "array", "items": { "type": "number" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "number" } }
               },
               "not": {
                 "anyOf": [
@@ -610,7 +754,7 @@
             {
               "properties": {
                 "type": { "const": "integer" },
-                "enum": { "type": "array", "items": { "type": "integer" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "integer" } }
               },
               "not": {
                 "anyOf": [
@@ -624,7 +768,7 @@
             {
               "properties": {
                 "type": { "const": "boolean" },
-                "enum": { "type": "array", "items": { "type": "boolean" } }
+                "enum": { "type": "array", "minItems": 1, "items": { "type": "boolean" } }
               },
               "not": {
                 "anyOf": [
@@ -643,79 +787,6 @@
           ]
         }
       ]
-    },
-    "transformStep": {
-      "description": "Transform step. Either a string step name (e.g. 'lower') or an object mapping step name to params (e.g. { replace: { from: ' ', to: '_' } }).",
-      "oneOf": [
-        {
-          "type": "string",
-          "description": "Step name (built-in or custom)"
-        },
-        {
-          "type": "object",
-          "description": "Step with parameters: { <stepName>: <params> }",
-          "minProperties": 1,
-          "maxProperties": 1,
-          "oneOf": [
-            {
-              "required": ["replace"],
-              "additionalProperties": false,
-              "properties": {
-                "replace": {
-                  "$ref": "#/definitions/replaceStepParams"
-                }
-              }
-            },
-            {
-              "required": ["truncate"],
-              "additionalProperties": false,
-              "properties": {
-                "truncate": {
-                  "$ref": "#/definitions/truncateStepParams"
-                }
-              }
-            },
-            {
-              "not": {
-                "anyOf": [
-                  { "required": ["replace"] },
-                  { "required": ["truncate"] }
-                ]
-              },
-              "additionalProperties": true
-            }
-          ]
-        }
-      ]
-    },
-    "replaceStepParams": {
-      "type": "object",
-      "description": "Literal replace configuration",
-      "required": ["from", "to"],
-      "additionalProperties": false,
-      "properties": {
-        "from": {
-          "type": "string",
-          "description": "String to replace"
-        },
-        "to": {
-          "type": "string",
-          "description": "Replacement string"
-        }
-      }
-    },
-    "truncateStepParams": {
-      "type": "integer",
-      "description": "Maximum length",
-      "minimum": 1
-    },
-    "transform": {
-      "type": "array",
-      "description": "Transform pipeline steps",
-      "minItems": 1,
-      "items": {
-        "$ref": "#/definitions/transformStep"
-      }
     }
   }
 }

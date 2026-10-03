@@ -54,15 +54,35 @@ my-tracking-plan/
 
 These are independent concepts — there's no automatic mapping between them.
 
+### Catalog, common fields and events
+
+Payload fields are defined in three places:
+
+- **Catalog** (`spec.events.payload.schema`): every field events may use, with its type, dictionary, constraints and `policy`. Being in the catalog does not put a field into an event.
+- **Common fields** (`spec.targets.all.schema` and `spec.targets.<targetId>.schema`): fields that are part of every event on every target, or on one target.
+- **Events** list the catalog fields they use, and may narrow common fields (for example pin `event_name` with `value`). Event fields inherit their type, so `{}` or `{required: true}` is a complete event field.
+
+An event field that is neither in the catalog nor a common field is an error (closed vocabulary). `policy` on a catalog or common field says what every event must do with it. See [Semantics](./semantics.md) for the merge rules, presence and the event predicate.
+
 ## Format Version
 
-Current specification version: **2026-01**
+Current specification version: **2026-09**
 
 All OpenTrackPlan files declare their format version:
 
 ```yaml
-opentp: 2026-01
+opentp: 2026-09
 ```
+
+Changes and migration notes for every version: [CHANGELOG.md](https://github.com/opentrackplan/opentp-spec/blob/main/CHANGELOG.md).
+
+## Versioning
+
+- A version is named `YYYY-MM`. The name is chosen when the version is planned, normally after the month in which its tag is cut; the changelog records the tag date (`2026-09` was cut on 2026-10-03).
+- A published version is immutable: its content never changes in place, and changes accumulate into the next version. The in-place amendment of `2026-01` on 2026-06-20 is recorded in the changelog as a one-time exception.
+- From `2026-09` on, every version is an annotated git tag of [opentp-spec](https://github.com/opentrackplan/opentp-spec) with a GitHub Release whose notes come from the changelog. Earlier tags stay lightweight.
+- Every version has migration notes in the changelog, and the reference CLI ships `opentp migrate` to upgrade plans.
+- Schemas are served at `https://opentp.dev/schemas/<version>/<file>`. `https://opentp.dev/schemas/latest/<file>` points at the newest version once the reference CLI supports it.
 
 ## File Types
 
@@ -71,6 +91,8 @@ opentp: 2026-01
 | `opentp.yaml` | Main configuration | [opentp.yaml](./schema/opentp-yaml.md) |
 | `events/*.yaml` | Event definitions | [Event Files](./schema/events.md) |
 | `dictionaries/*.yaml` | Reusable value lists | [Dictionaries](./schema/dictionaries.md) |
+
+`.yaml` and `.yml` are equivalent everywhere.
 
 ## Semantics
 
@@ -98,11 +120,13 @@ Schema URLs:
 | Field (shared) | `https://opentp.dev/schemas/latest/field.schema.json` |
 | Version (shared) | `https://opentp.dev/schemas/latest/version.schema.json` |
 
+Replace `latest` with a version (for example `2026-09`) to pin it.
+
 ## Getting Started
 
 1. Create `opentp.yaml` in your project root
-2. Define your taxonomy and payload structure
-3. Create event files in the `events/` directory
+2. Define your taxonomy, targets and field catalog
+3. Create event files in the `events/` directory that list the fields they use
 4. Use dictionaries for reusable value lists
 5. Validate with the [opentp CLI](https://github.com/opentrackplan/opentp-cli)
 

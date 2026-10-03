@@ -1,9 +1,10 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2026-01/version.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://opentp.dev/schemas/2026-09/version.schema.json",
   "title": "Specification Version",
-  "description": "Specification version in YYYY-MM format",
+  "description": "Specification version in YYYY-MM format. These schemas describe exactly this version.",
   "type": "string",
   "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
-  "examples": ["2026-01"]
+  "const": "2026-09",
+  "examples": ["2026-09"]
 }

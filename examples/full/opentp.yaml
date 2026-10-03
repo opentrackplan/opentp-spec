@@ -1,4 +1,4 @@
-opentp: 2026-01
+opentp: 2026-09
 
 info:
   title: Example Tracking Plan
@@ -14,6 +14,40 @@ spec:
       template: "{area}/{event}.yaml"
     dictionaries:
       root: /dictionaries
+
+  # Common fields: part of every event on a target
+  targets:
+    all:
+      title: Every target
+      description: Fields that every event sends on every target
+      schema:
+        application_id:
+          type: string
+          title: Application
+          dict: data/application_id
+          policy: fixed
+        event_name:
+          type: string
+          title: Event name
+          policy: fixed
+        event_category:
+          type: string
+          title: Event category
+          policy: restricted
+    ios:
+      title: iOS app
+      schema:
+        device_model:
+          type: string
+          title: Device model
+          description: Hardware model identifier reported by the device
+          example: "iPhone15,2"
+
+  # Portable named checks, applied with checks: { <id>: true }
+  checks:
+    jira-key:
+      title: Jira issue key
+      pattern: "^[A-Z]+-[0-9]+$"
 
   events:
     key:
@@ -50,29 +84,54 @@ spec:
       targets:
         all: [web, ios, android]
         mobile: [ios, android]
+      # Field catalog: every field events may use (listing a field here does not add it to events)
       schema:
-        application_id:
+        # Analytics slots: the catalog gives the type, each event gives the meaning
+        dimension_1: &dim
           type: string
-          dict: data/application_id
-          required: true
-          valueRequired: true
-        event_name:
+        dimension_2: *dim
+        dimension_3: *dim
+        screen_name:
           type: string
-          required: true
-        event_category:
-          type: string
-          required: true
-        dimension_1:
-          type: string
-          name: orgType
-          title: Organization Type
-          description: Logical organization type stored in analytics slot dimension_1
-          enum: [startup, enterprise, agency]
-          example: enterprise
-          required: false
+          title: Screen name
+          description: Name of the screen or page where the event happened
+          maxLength: 100
+          example: login
         user_id:
           type: string
-          required: false
+          title: User ID
+        auth_method:
+          type: string
+          enum: [email, google, github, apple]
+        signup_method:
+          type: string
+          enum: [email, google, github, apple]
+        has_referral:
+          type: boolean
+        push_opt_in:
+          type: boolean
+        widgets_count:
+          type: integer
+          minimum: 0
+        has_notifications:
+          type: boolean
+        total_steps:
+          type: integer
+          minimum: 1
+        skipped_steps:
+          type: integer
+          minimum: 0
+        duration_seconds:
+          type: number
+          minimum: 0
+        step_number:
+          type: integer
+          minimum: 1
+        step_name:
+          type: string
+          maxLength: 100
+        is_skipped:
+          type: boolean
 
     pii:
       kind:
@@ -88,8 +147,9 @@ spec:
         jira:
           type: string
           required: true
-          pattern: "^[A-Z]+-[0-9]+$"
+          checks:
+            jira-key: true
         retention_days:
-          type: number
+          type: integer
           enum: [0, 7, 30]
           required: false

@@ -1,4 +1,4 @@
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: auth::signup_complete
@@ -13,34 +13,31 @@ event:
     web:
       schema:
         application_id:
-          value: web-app
+          value: shop
         event_name:
           value: signup_complete
         event_category:
           value: auth
         signup_method:
-          type: string
           enum: [email, google, github]
           required: true
-        has_referral:
-          type: boolean
-          required: false
+        has_referral: {}
+        dimension_2:
+          name: referralCode
+          title: Referral code
 
     mobile:
       schema:
         application_id:
-          value: mobile-app
+          value: shop
         event_name:
           value: signup_complete
         event_category:
           value: auth
         signup_method:
-          type: string
-          enum: [email, google, github, apple]
           required: true
-        has_referral:
-          type: boolean
-          required: false
-        push_opt_in:
-          type: boolean
-          required: false
+        has_referral: {}
+        push_opt_in: {}
+        dimension_2:
+          name: referralCode
+          title: Referral code

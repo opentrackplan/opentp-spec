@@ -1,0 +1,74 @@
+name: Release
+
+# A spec version is an annotated YYYY-MM tag. This workflow checks the tagged content and publishes a
+# GitHub Release whose notes are the "## [YYYY-MM]" section of CHANGELOG.md. A published tag is
+# immutable (jsDelivr caches it for a year): never move or re-push it; fix mistakes in the next version.
+
+on:
+  push:
+    tags:
+      - '[0-9][0-9][0-9][0-9]-[0-9][0-9]'
+
+permissions:
+  contents: read
+
+jobs:
+  check-tag:
+    name: Check the tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require an annotated tag on the version in the schemas
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          # actions/checkout may create the tag ref without the tag object; fetch the real one
+          git fetch --force --depth=1 origin "refs/tags/${tag}:refs/tags/${tag}"
+          if [ "$(git cat-file -t "${tag}")" != "tag" ]; then
+            echo "::error::${tag} is a lightweight tag. Spec versions are annotated tags: git tag -a ${tag} -m \"OpenTrackPlan ${tag}\". Do not move a pushed tag; ask before deleting it."
+            exit 1
+          fi
+          if ! grep -Fq "\"const\": \"${tag}\"" schemas/version.schema.json; then
+            echo "::error::schemas/version.schema.json does not pin ${tag} (\"const\")."
+            exit 1
+          fi
+          echo "Releasing ${tag}"
+
+  # The same checks as on every push (validate.ts and its tests)
+  verify:
+    needs: check-tag
+    uses: ./.github/workflows/validate.yml
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          awk -v heading="## [${tag}]" '
+            /^## / { if (found) exit; if (index($0, heading) == 1) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release-notes.md"; then
+            echo "::error::CHANGELOG.md has no '## [${tag}]' section (or it is empty)."
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --title "OpenTrackPlan ${GITHUB_REF_NAME}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

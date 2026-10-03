@@ -1,0 +1,15 @@
+{
+  "name": "opentp-spec",
+  "private": true,
+  "description": "OpenTrackPlan specification: JSON Schemas, docs, examples and the consistency checker",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "validate": "bun scripts/validate.ts",
+    "test": "bun test scripts/validate.test.ts"
+  },
+  "devDependencies": {
+    "yaml": "2.8.4"
+  }
+}

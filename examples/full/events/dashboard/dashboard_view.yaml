@@ -1,4 +1,4 @@
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: dashboard::dashboard_view
@@ -12,18 +12,18 @@ event:
   payload:
     schema:
       application_id:
-        value: web-app
+        value: admin-console
       event_name:
         value: dashboard_view
       event_category:
         value: dashboard
       dimension_1:
-        value: enterprise
+        name: orgType
+        title: Organization type
+        description: Organization type of the signed-in user, stored in analytics slot dimension_1
+        enum: [startup, enterprise, agency]
+        example: enterprise
       widgets_count:
-        type: number
         example: 7
-        required: false
       has_notifications:
-        type: boolean
         example: true
-        required: false

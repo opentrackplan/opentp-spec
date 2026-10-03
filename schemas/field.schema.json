@@ -1,37 +1,48 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2026-01/field.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://opentp.dev/schemas/2026-09/field.schema.json",
   "title": "OpenTrackPlan Field",
-  "description": "Field definition. Use 'type' for the expected data type, 'value' for fixed values, and 'enum' or 'dict' to restrict allowed values.",
+  "description": "Payload field definition. This schema is used for common fields (spec.targets.<id>.schema); catalog fields use #/definitions/catalogField and event fields #/definitions/eventField. Use 'value' for a fixed value and 'enum' or 'dict' to restrict allowed values. 'type' may be omitted where it is inherited from the catalog or spec.targets.",
   "type": "object",
   "allOf": [
     {
+      "description": "enum and dict are mutually exclusive",
+      "not": { "required": ["enum", "dict"] }
+    },
+    {
+      "description": "enum and value are mutually exclusive",
+      "not": { "required": ["enum", "value"] }
+    },
+    {
+      "description": "dict and value are mutually exclusive",
+      "not": { "required": ["dict", "value"] }
+    },
+    {
+      "description": "required: false contradicts value (a field with a value is always present)",
       "not": {
-        "required": ["enum", "dict"]
+        "required": ["value", "required"],
+        "properties": { "required": { "const": false } }
       }
     },
     {
+      "description": "required: false contradicts policy restricted or fixed (such a field is always present)",
       "not": {
-        "required": ["enum", "value"]
+        "required": ["policy", "required"],
+        "properties": {
+          "policy": { "enum": ["restricted", "fixed"] },
+          "required": { "const": false }
+        }
       }
-    },
-    {
-      "not": {
-        "required": ["dict", "value"]
-      }
-    },
-    {
-      "anyOf": [
-        { "required": ["type"] },
-        { "required": ["value"] }
-      ]
     }
   ],
+  "patternProperties": {
+    "^x-": {}
+  },
   "additionalProperties": false,
   "properties": {
     "name": {
       "type": "string",
-      "description": "Logical or code-facing field name. The YAML key remains the canonical payload field key."
+      "description": "Code-facing field name (for example a generated parameter name). The YAML key remains the canonical payload field key."
     },
     "title": {
       "type": "string",
@@ -43,73 +54,58 @@
     },
     "type": {
       "type": "string",
-      "description": "Data type",
+      "description": "Data type. Required in the catalog; elsewhere it may be inherited.",
       "enum": ["string", "number", "integer", "boolean", "array"]
     },
     "enum": {
       "type": "array",
-      "description": "List of allowed values for this field"
+      "description": "Allowed values (at least one; scalars of the field's type)",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/scalar" }
     },
     "dict": {
       "type": "string",
-      "description": "Reference to a dictionary (e.g., 'taxonomy/apps')"
-    },
-    "required": {
-      "type": "boolean",
-      "description": "Whether this field is required"
-    },
-    "valueRequired": {
-      "type": "boolean",
-      "description": "Whether this field must define a fixed value (`value`) in effective event payload schemas (enforced by tooling; independent of `required`)"
+      "description": "Reference to a dictionary (e.g., 'data/application_id')"
     },
     "value": {
-      "description": "Fixed value for this field",
+      "description": "Fixed value: the field is always present and equals this value",
       "anyOf": [
-        { "type": "string" },
-        { "type": "number" },
-        { "type": "integer" },
-        { "type": "boolean" },
-        {
-          "type": "array",
-          "items": {
-            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
-          }
-        }
+        { "$ref": "#/definitions/scalar" },
+        { "type": "array", "items": { "$ref": "#/definitions/scalar" } }
       ]
     },
     "example": {
-      "description": "Example value for documentation, mock data, and generators. Does not affect validation constraints.",
+      "description": "Example value for documentation, mock data and generators. It must satisfy the field.",
       "anyOf": [
-        { "type": "string" },
-        { "type": "number" },
-        { "type": "integer" },
-        { "type": "boolean" },
-        {
-          "type": "array",
-          "items": {
-            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
-          }
-        }
+        { "$ref": "#/definitions/scalar" },
+        { "type": "array", "items": { "$ref": "#/definitions/scalar" } }
       ]
+    },
+    "required": {
+      "type": "boolean",
+      "description": "Whether the field is present in every hit. On a catalog or common field, true is a minimum that events cannot weaken."
+    },
+    "policy": {
+      "type": "string",
+      "description": "What every event must do with this field (catalog and common fields only): specified = list it, restricted = restrict it with value, enum or dict, fixed = set its value",
+      "enum": ["specified", "restricted", "fixed"]
     },
     "minLength": {
       "type": "integer",
       "minimum": 0,
-      "description": "Minimum string length (type: string)"
+      "description": "Minimum string length in Unicode code points (type: string)"
     },
     "maxLength": {
       "type": "integer",
       "minimum": 0,
-      "description": "Maximum string length (type: string)"
+      "description": "Maximum string length in Unicode code points (type: string)"
     },
     "pattern": {
       "type": "string",
-      "description": "Regex pattern constraint (type: string)"
+      "description": "Regular expression (ECMA-262 with Unicode, not anchored) the string must match (type: string)"
     },
     "format": {
-      "type": "string",
-      "description": "String format hint (tooling may validate)",
-      "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+      "$ref": "#/definitions/format"
     },
     "minimum": {
       "type": "number",
@@ -151,7 +147,7 @@
     },
     "pii": {
       "type": "object",
-      "description": "PII metadata and masking configuration for this field",
+      "description": "PII metadata: the reserved keys kind and masker, plus the metadata keys defined in spec.events.pii.schema",
       "additionalProperties": true,
       "properties": {
         "kind": {
@@ -164,48 +160,25 @@
         }
       }
     },
+    "checks": {
+      "$ref": "#/definitions/checks"
+    },
     "x-opentp": {
-      "$ref": "#/definitions/xOpentp"
+      "not": {},
+      "description": "Removed in 2026-09; see CHANGELOG.md"
     }
   },
   "oneOf": [
     {
-      "description": "Untyped field (commonly used for fixed values that inherit type from opentp.yaml).",
-      "allOf": [
-        {
-          "not": {
-            "required": ["type"]
-          }
-        },
-        {
-          "not": {
-            "anyOf": [
-              { "required": ["enum"] },
-              { "required": ["dict"] },
-              { "required": ["minLength"] },
-              { "required": ["maxLength"] },
-              { "required": ["pattern"] },
-              { "required": ["format"] },
-              { "required": ["minimum"] },
-              { "required": ["maximum"] },
-              { "required": ["exclusiveMinimum"] },
-              { "required": ["exclusiveMaximum"] },
-              { "required": ["multipleOf"] },
-              { "required": ["items"] },
-              { "required": ["minItems"] },
-              { "required": ["maxItems"] },
-              { "required": ["uniqueItems"] }
-            ]
-          }
-        }
-      ]
+      "description": "Untyped field: the type is inherited from the catalog or spec.targets, and validators check enum, value, example and constraints against it",
+      "not": { "required": ["type"] }
     },
     {
       "description": "String field",
       "required": ["type"],
       "properties": {
         "type": { "const": "string" },
-        "enum": { "type": "array", "items": { "type": "string" } },
+        "enum": { "type": "array", "minItems": 1, "items": { "type": "string" } },
         "value": { "type": "string" },
         "example": { "type": "string" }
       },
@@ -228,7 +201,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "number" },
-        "enum": { "type": "array", "items": { "type": "number" } },
+        "enum": { "type": "array", "minItems": 1, "items": { "type": "number" } },
         "value": { "type": "number" },
         "example": { "type": "number" }
       },
@@ -250,7 +223,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "integer" },
-        "enum": { "type": "array", "items": { "type": "integer" } },
+        "enum": { "type": "array", "minItems": 1, "items": { "type": "integer" } },
         "value": { "type": "integer" },
         "example": { "type": "integer" }
       },
@@ -272,7 +245,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "boolean" },
-        "enum": { "type": "array", "items": { "type": "boolean" } },
+        "enum": { "type": "array", "minItems": 1, "items": { "type": "boolean" } },
         "value": { "type": "boolean" },
         "example": { "type": "boolean" }
       },
@@ -295,22 +268,12 @@
       }
     },
     {
-      "description": "Array field (arrays of scalar items only)",
-      "required": ["type", "items"],
+      "description": "Array field (arrays of scalar items only; restrict the elements with items.enum or items.dict)",
+      "required": ["type"],
       "properties": {
         "type": { "const": "array" },
-        "value": {
-          "type": "array",
-          "items": {
-            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
-          }
-        },
-        "example": {
-          "type": "array",
-          "items": {
-            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }, { "type": "boolean" }]
-          }
-        }
+        "value": { "type": "array", "items": { "$ref": "#/definitions/scalar" } },
+        "example": { "type": "array", "items": { "$ref": "#/definitions/scalar" } }
       },
       "not": {
         "anyOf": [
@@ -330,36 +293,74 @@
     }
   ],
   "definitions": {
-    "xOpentp": {
-      "type": "object",
-      "description": "OpenTrackPlan extensions (tooling-defined).",
-      "additionalProperties": false,
-      "properties": {
-        "role": {
-          "type": "string",
-          "description": "Field role hint for tooling (does not affect schema validation).",
-          "enum": ["constant", "attribute", "shared"]
-        },
-        "checks": {
-          "type": "object",
-          "description": "Tooling-defined validation checks (non-portable).",
-          "additionalProperties": true
+    "catalogField": {
+      "description": "Catalog field (spec.events.payload.schema.<field>): a Field with a type; an array field also needs items",
+      "allOf": [
+        { "$ref": "#" },
+        { "required": ["type"] },
+        {
+          "description": "an array field in the catalog needs items",
+          "anyOf": [
+            {
+              "not": {
+                "required": ["type"],
+                "properties": { "type": { "const": "array" } }
+              }
+            },
+            { "required": ["items"] }
+          ]
         }
-      }
+      ]
+    },
+    "eventField": {
+      "description": "Event field (schema.<field> of a payload version): a Field without policy; the type may be inherited",
+      "allOf": [
+        { "$ref": "#" },
+        {
+          "properties": {
+            "policy": {
+              "not": {},
+              "description": "policy is set on catalog and common fields in opentp.yaml, not in events"
+            }
+          }
+        }
+      ]
+    },
+    "scalar": {
+      "description": "A scalar value: string, number (integers included) or boolean",
+      "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
+    },
+    "format": {
+      "type": "string",
+      "description": "String format (defined in docs/semantics.md): date and date-time per RFC 3339, email, uuid, absolute uri, ipv4, ipv6",
+      "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+    },
+    "checks": {
+      "type": "object",
+      "description": "Checks by id: { <checkId>: <params> }. An id defined in spec.checks takes true (enable) or false (disable); any other id is tool-defined. false disables a check that an earlier layer set.",
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9_.-]*$": {}
+      },
+      "additionalProperties": false
     },
     "arrayItems": {
       "type": "object",
-      "description": "Array item schema. Only scalar item types are allowed.",
+      "description": "Array item schema. Only scalar item types are allowed; the type may be inherited.",
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
-      "required": ["type"],
       "properties": {
         "type": {
           "type": "string",
+          "description": "Item type (required on the effective field)",
           "enum": ["string", "number", "integer", "boolean"]
         },
         "enum": {
           "type": "array",
-          "description": "Allowed values for each array item"
+          "description": "Allowed values for each array item (at least one)",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/scalar" }
         },
         "dict": {
           "type": "string",
@@ -377,8 +378,7 @@
           "type": "string"
         },
         "format": {
-          "type": "string",
-          "enum": ["date", "date-time", "email", "uuid", "uri", "ipv4", "ipv6"]
+          "$ref": "#/definitions/format"
         },
         "minimum": {
           "type": "number"
@@ -395,20 +395,31 @@
         "multipleOf": {
           "type": "number",
           "exclusiveMinimum": 0
+        },
+        "checks": {
+          "$ref": "#/definitions/checks"
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       },
       "allOf": [
         {
-          "not": {
-            "required": ["enum", "dict"]
-          }
+          "description": "enum and dict are mutually exclusive",
+          "not": { "required": ["enum", "dict"] }
         }
       ],
       "oneOf": [
         {
+          "description": "Untyped items: the item type is inherited",
+          "not": { "required": ["type"] }
+        },
+        {
+          "required": ["type"],
           "properties": {
             "type": { "const": "string" },
-            "enum": { "type": "array", "items": { "type": "string" } }
+            "enum": { "type": "array", "minItems": 1, "items": { "type": "string" } }
           },
           "not": {
             "anyOf": [
@@ -421,9 +432,10 @@
           }
         },
         {
+          "required": ["type"],
           "properties": {
             "type": { "const": "number" },
-            "enum": { "type": "array", "items": { "type": "number" } }
+            "enum": { "type": "array", "minItems": 1, "items": { "type": "number" } }
           },
           "not": {
             "anyOf": [
@@ -435,9 +447,10 @@
           }
         },
         {
+          "required": ["type"],
           "properties": {
             "type": { "const": "integer" },
-            "enum": { "type": "array", "items": { "type": "integer" } }
+            "enum": { "type": "array", "minItems": 1, "items": { "type": "integer" } }
           },
           "not": {
             "anyOf": [
@@ -449,9 +462,10 @@
           }
         },
         {
+          "required": ["type"],
           "properties": {
             "type": { "const": "boolean" },
-            "enum": { "type": "array", "items": { "type": "boolean" } }
+            "enum": { "type": "array", "minItems": 1, "items": { "type": "boolean" } }
           },
           "not": {
             "anyOf": [

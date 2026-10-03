@@ -1,4 +1,4 @@
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: auth::login_button_click
@@ -19,18 +19,15 @@ event:
             date: "2025-01-01"
         schema:
           application_id:
-            value: web-app
+            value: shop
           event_name:
             value: login_button_click
           event_category:
             value: auth
           auth_method:
-            type: string
             enum: [email, google, github]
             required: true
           user_id:
-            type: string
-            required: false
             pii:
               kind: user_id
               masker: star
@@ -42,6 +39,4 @@ event:
           changes:
             - Added screen_name
         schema:
-          screen_name:
-            type: string
-            required: false
+          screen_name: {}

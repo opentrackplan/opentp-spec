@@ -1,4 +1,4 @@
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: auth::login_click
@@ -11,7 +11,5 @@ event:
       event_name:
         value: login_click
       auth_method:
-        type: string
-        enum: [email, google, github]
-        example: email
         required: true
+        example: email

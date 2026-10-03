@@ -20,7 +20,7 @@ Analytics implementations often break down in communication:
 Create `opentp.yaml` in your project:
 
 ```yaml
-opentp: 2026-01
+opentp: 2026-09
 
 info:
   title: My Tracking Plan
@@ -31,6 +31,15 @@ spec:
     events:
       root: /events
       template: "{area}/{event}.yaml"
+
+  # Common fields: part of every event on every target
+  targets:
+    all:
+      schema:
+        event_name:
+          type: string
+          policy: fixed
+
   events:
     key:
       pattern: "^[a-z0-9_]+::[a-z0-9_]+$"
@@ -50,21 +59,21 @@ spec:
     payload:
       targets:
         all: [web, ios, android]
+      # Field catalog: every field events may use
       schema:
-        event_name:
+        auth_method:
           type: string
-          required: true
+          enum: [email, google, github]
+        user_id:
+          type: string
         dimension_1:
           type: string
-          name: orgType
-          title: Organization Type
-          example: enterprise
 ```
 
 Create an event in `events/auth/login.yaml`:
 
 ```yaml
-opentp: 2026-01
+opentp: 2026-09
 
 event:
   key: auth::login
@@ -77,42 +86,46 @@ event:
       event_name:
         value: login
       auth_method:
-        type: string
-        enum: [email, google, github]
+        required: true
         example: email
       user_id:
-        type: string
         pii:
           kind: user_id
           masker: star
-          owner: analytics
-          jira: ANALYTICS-123
+      dimension_1:
+        name: orgType
+        title: Organization Type
+        example: enterprise
 ```
 
-Note: if a taxonomy field is present in `spec.paths.events.template` (for example `{area}/{event}.yaml`),
-its value is extracted from the event file path and does not need to be duplicated in `event.taxonomy`.
+How this fits together:
 
-Use `name` when the payload key is a transport or vendor slot, but the field has a clearer logical/code-facing name.
-For example, `dimension_1` can keep the canonical payload key while declaring `name: orgType`.
-Use `example` for a representative value used by documentation, mock data, and generators.
+- `spec.targets.all.schema` holds **common fields**: every event has them. `spec.targets.<targetId>.schema` holds the common fields of one target.
+- `spec.events.payload.schema` is the **field catalog**: the fields events may use. An event lists the catalog fields it uses; a field that is neither in the catalog nor a common field is an error.
+- Event fields inherit their type and constraints, so the event writes only what is specific to it: a fixed `value`, `required: true`, a narrower `enum`, or `{}` to list a field unchanged.
+- If a taxonomy field is present in `spec.paths.events.template` (for example `{area}/{event}.yaml`), its value is extracted from the event file path and does not need to be duplicated in `event.taxonomy`.
+- Use `name` when the payload key is a transport or vendor slot, but the field has a clearer logical/code-facing name: `dimension_1` keeps the canonical payload key while declaring `name: orgType`.
+- Use `example` for a representative value used by documentation, mock data, and generators. It must satisfy the field.
 
-### Pinned values per event (`valueRequired`)
+### What every event must define (`policy`)
 
-Some fields are **event characteristics** that must be pinned to a single constant per event (for example `application_id`).
-To require that, set `valueRequired: true` on the base field definition.
+Some fields are **event characteristics** that every event must define, for example `event_name` or `application_id`. Set `policy` on the catalog or common field:
 
-`valueRequired` is independent of `required`:
+- `specified` — every event lists the field (`{}` is enough);
+- `restricted` — every event restricts it with `value`, `enum` or `dict` (on an array field only `value` does, since arrays take no top-level `enum` or `dict`);
+- `fixed` — every event sets its `value`.
 
-- `required: true` + `valueRequired: true` — required constant (tooling requires a fixed `value` per event).
-- `required: false` + `valueRequired: true` — optional constant (tooling requires a fixed `value` only when the event explicitly defines the field in its payload schema).
+A field with `policy: restricted` or `fixed`, and any field with a `value`, is present in every hit. `policy` replaces `valueRequired` (2026-01); the normative rules are in [Semantics](docs/semantics.md#policy).
 
 ## Documentation
 
 - [Specification Overview](docs/index.md)
+- [Semantics](docs/semantics.md) — normative rules: layers and merge, presence, policy, the event predicate, checks, extensions, ignore
 - [Schema Reference](docs/schema/index.md)
   - [opentp.yaml](docs/schema/opentp-yaml.md)
   - [Event Files](docs/schema/events.md)
   - [Dictionaries](docs/schema/dictionaries.md)
+- [Changelog and migration notes](CHANGELOG.md)
 
 ## JSON Schemas
 
@@ -134,21 +147,27 @@ Add to your YAML files:
 
 ## Tools
 
-- [opentp CLI](https://github.com/opentrackplan/opentp-cli) — Validate and generate from tracking plans
+- [opentp CLI](https://github.com/opentrackplan/opentp-cli) — Validate and generate from tracking plans; `opentp migrate` upgrades plans from 2026-01
 
 ## Examples
 
-- `examples/full/` — full example (targets + versions + dictionaries)
-- `examples/simple/` — minimal example (implicit `all`, unversioned payload)
-- `examples/extensions/` — examples using `x-opentp` extensions (tooling-defined)
+- `examples/simple/` — minimal example: a catalog with two fields and one event that lists them
+- `examples/full/` — common fields with `policy`, slots, versions with aliases and `$ref`, map form, dictionaries, PII and a portable check
+- `examples/extensions/` — vendor extensions (`x-acme-team`), tool-defined check ids, `spec.checks` and target common fields
 
 ## Repo checks
 
-- Run `bun scripts/validate.ts` to check examples and documentation snippets against the JSON schemas.
+The checks require Bun 1.4.2 or later (`package.json` `packageManager`; older Bun versions cannot read `bun.lock`).
+
+```bash
+bun install --frozen-lockfile
+bun scripts/validate.ts             # schemas, examples and docs YAML blocks
+bun test scripts/validate.test.ts   # validator tests
+```
 
 ## Specification Version
 
-Current version: **2026-01**
+Current version: **2026-09** (see [CHANGELOG.md](CHANGELOG.md) for changes and migration notes)
 
 ## Contributing
 

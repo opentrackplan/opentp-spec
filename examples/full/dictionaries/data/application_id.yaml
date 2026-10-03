@@ -1,8 +1,8 @@
-opentp: 2026-01
+opentp: 2026-09
 
 dict:
   type: string
   values:
-    - web-app
-    - mobile-app
-    - admin-panel
+    - shop
+    - admin-console
+    - help-center

@@ -1,9 +1,9 @@
-opentp: 2026-01
+opentp: 2026-09
 
 info:
   title: Simple Tracking Plan
   version: 1.0.0
-  description: Minimal example with unversioned payload
+  description: Minimal example with a field catalog and an unversioned payload
 
 spec:
   paths:
@@ -35,7 +35,6 @@ spec:
       schema:
         event_name:
           type: string
-          required: true
         auth_method:
           type: string
-          required: false
+          enum: [email, google, github]

@@ -7,7 +7,7 @@ Dictionaries define allowed values that can be referenced across your tracking p
 ```yaml
 # yaml-language-server: $schema=https://opentp.dev/schemas/latest/dict.schema.json
 # dictionaries/taxonomy/areas.yaml
-opentp: 2026-01
+opentp: 2026-09
 
 dict:
   type: string
@@ -25,15 +25,17 @@ dict:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `opentp` | string | Yes | Format version |
+| `opentp` | string | Yes | Format version: `2026-09` |
 | `dict` | object | Yes | Dictionary definition |
+| `x-*` | any | No | Extensions |
 
 ### dict
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `type` | string | Yes | `string`, `number`, `integer`, or `boolean` |
-| `values` | array | Yes | Allowed values |
+| `values` | array | Yes | Allowed values: at least one, unique, of the given type |
+| `x-*` | any | No | Extensions |
 
 ## Usage
 
@@ -47,6 +49,7 @@ spec:
   events:
     taxonomy:
       area:
+        title: Area
         type: string
         dict: taxonomy/areas  # -> dictionaries/taxonomy/areas.yaml
         required: true
@@ -54,7 +57,7 @@ spec:
 
 ### In Payload
 
-Reference a dictionary in payload fields:
+Reference a dictionary in a catalog field or a common field:
 
 ```yaml
 # opentp.yaml
@@ -62,22 +65,23 @@ spec:
   events:
     payload:
       schema:
-        application_id:
+        auth_method:
           type: string
-          dict: data/application_id
+          dict: data/auth_methods
 ```
 
 ### In Event Files
 
-Reference a dictionary in event-specific fields:
+Events inherit the dictionary of a catalog or common field. An event may pin one value of it, or narrow it with an `enum` or another dictionary whose values are a subset:
 
 ```yaml
 # events/auth/login.yaml
-payload:
-  schema:
-    auth_method:
-      type: string
-      dict: data/auth_methods
+event:
+  payload:
+    schema:
+      auth_method:
+        enum: [email, google]
+        required: true
 ```
 
 ## Dictionary Path Resolution
@@ -95,7 +99,7 @@ spec:
       root: /dictionaries
 ```
 
-Reference `taxonomy/areas` resolves to `dictionaries/taxonomy/areas.yaml`.
+Reference `taxonomy/areas` resolves to `dictionaries/taxonomy/areas.yaml` or `dictionaries/taxonomy/areas.yml`. Both files existing is an error. The dictionaries root is relative to the directory of `opentp.yaml`.
 
 ## Organization
 
@@ -120,7 +124,7 @@ dictionaries/
 
 ```yaml
 # dictionaries/data/auth_methods.yaml
-opentp: 2026-01
+opentp: 2026-09
 
 dict:
   type: string
@@ -135,7 +139,7 @@ dict:
 
 ```yaml
 # dictionaries/data/priority_levels.yaml
-opentp: 2026-01
+opentp: 2026-09
 
 dict:
   type: number
@@ -158,15 +162,19 @@ Use **enum** (inline) when:
 - Simpler is better
 
 ```yaml
+# opentp.yaml: catalog fields (spec.events.payload.schema)
+
 # Dictionary reference
 auth_method:
+  type: string
   dict: data/auth_methods
 
 # Inline enum
 status:
+  type: string
   enum: [active, inactive]
 ```
 
 ## Constraints
 
-`enum`, `dict`, and `value` are mutually exclusive — a field can only use one of these.
+`enum`, `dict`, and `value` are mutually exclusive — a field definition can only use one of these. An `enum` needs at least one value.

@@ -1,10 +1,13 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "$id": "https://opentp.dev/schemas/2026-01/event.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://opentp.dev/schemas/2026-09/event.schema.json",
   "title": "OpenTrackPlan Event",
-  "description": "Schema for OpenTrackPlan event files (.yaml). Note: taxonomy and payload fields are validated by CLI based on opentp.yaml",
+  "description": "Schema for OpenTrackPlan event files (.yaml/.yml). Taxonomy values and payload fields are also checked by validators against opentp.yaml (docs/semantics.md).",
   "type": "object",
   "required": ["opentp", "event"],
+  "patternProperties": {
+    "^x-": {}
+  },
   "additionalProperties": false,
   "properties": {
     "opentp": {
@@ -14,6 +17,9 @@
       "type": "object",
       "description": "Event definition",
       "required": ["key", "taxonomy", "payload"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "key": {
@@ -22,6 +28,9 @@
         "lifecycle": {
           "type": "object",
           "description": "Event lifecycle information",
+          "patternProperties": {
+            "^x-": {}
+          },
           "additionalProperties": false,
           "properties": {
             "status": {
@@ -31,7 +40,7 @@
             },
             "deprecatedAt": {
               "type": "string",
-              "description": "Date when event was deprecated (ISO 8601)",
+              "description": "Date when the event was deprecated (RFC 3339 full-date, e.g. \"2025-01-01\")",
               "format": "date"
             },
             "deprecatedReason": {
@@ -40,6 +49,10 @@
             },
             "replacedBy": {
               "$ref": "#/definitions/eventKey"
+            },
+            "x-opentp": {
+              "not": {},
+              "description": "Removed in 2026-09; see CHANGELOG.md"
             }
           }
         },
@@ -53,6 +66,9 @@
           "items": {
             "type": "object",
             "required": ["key"],
+            "patternProperties": {
+              "^x-": {}
+            },
             "additionalProperties": false,
             "properties": {
               "key": {
@@ -60,6 +76,9 @@
               },
               "deprecated": {
                 "type": "object",
+                "patternProperties": {
+                  "^x-": {}
+                },
                 "additionalProperties": false,
                 "properties": {
                   "reason": {
@@ -68,34 +87,49 @@
                   "date": {
                     "type": "string",
                     "format": "date"
+                  },
+                  "x-opentp": {
+                    "not": {},
+                    "description": "Removed in 2026-09; see CHANGELOG.md"
                   }
                 }
+              },
+              "x-opentp": {
+                "not": {},
+                "description": "Removed in 2026-09; see CHANGELOG.md"
               }
             }
           }
         },
         "ignore": {
           "type": "array",
-          "description": "Validations to skip for this event",
+          "description": "Checks to skip for this event (path grammar: docs/semantics.md, \"Ignore\")",
           "items": {
             "type": "object",
-            "required": ["path", "reason"],
+            "required": ["path"],
+            "patternProperties": {
+              "^x-": {}
+            },
             "additionalProperties": false,
             "properties": {
               "path": {
                 "type": "string",
-                "description": "Path to field to skip validation"
+                "description": "What to skip, e.g. 'key', 'taxonomy.<field>', 'payload.<field>' or 'payload::<field>'"
               },
               "reason": {
                 "type": "string",
-                "description": "Reason for skipping validation"
+                "description": "Why the check is skipped (optional, recommended)"
+              },
+              "x-opentp": {
+                "not": {},
+                "description": "Removed in 2026-09; see CHANGELOG.md"
               }
             }
           }
         },
         "payload": {
           "type": "object",
-          "description": "Data sent to analytics targets",
+          "description": "Data sent to analytics targets: one payload definition for every target (implicit form) or a map of selectors and target ids",
           "oneOf": [
             {
               "$ref": "#/definitions/target"
@@ -104,8 +138,16 @@
               "$ref": "#/definitions/payloadTargets"
             }
           ]
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
+    },
+    "x-opentp": {
+      "not": {},
+      "description": "Removed in 2026-09; see CHANGELOG.md"
     }
   },
   "definitions": {
@@ -116,7 +158,7 @@
     },
     "payloadTargets": {
       "type": "object",
-      "description": "Target-specific payload definitions (payload.<target>)",
+      "description": "Map form: payload.<selectorOrTargetId>, each covering a set of targets (a target at most once)",
       "minProperties": 1,
       "additionalProperties": {
         "$ref": "#/definitions/target"
@@ -135,7 +177,7 @@
     },
     "versionedTarget": {
       "type": "object",
-      "description": "Versioned payload for a target (supports tags/aliases). Keys with object values are versions; keys with string values are aliases.",
+      "description": "Versioned payload for a target. Keys with object values are versions; keys with string values are aliases (tags).",
       "required": ["current"],
       "additionalProperties": {
         "anyOf": [
@@ -151,11 +193,12 @@
       "properties": {
         "current": {
           "type": "string",
-          "description": "Current payload version or tag to use by default"
+          "description": "Current payload version or alias: what new code sends"
         }
       },
       "allOf": [
         {
+          "description": "a versioned payload has no schema of its own",
           "not": {
             "required": ["schema"]
           }
@@ -164,29 +207,39 @@
     },
     "payloadVersion": {
       "type": "object",
-      "description": "A specific payload schema snapshot (optionally derived from another via $ref)",
+      "description": "A payload schema snapshot (optionally derived from another version via $ref)",
       "required": ["schema"],
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "$ref": {
           "type": "string",
-          "description": "Reference to another payload version to derive from (resolver-defined syntax, e.g. '1.0.0' or 'all::1.0.0')"
+          "description": "Version to derive from: '<versionKey>' or '<payloadKey>::<versionKey>' (map form)"
         },
         "meta": {
           "$ref": "#/definitions/payloadMeta"
         },
         "schema": {
           "type": "object",
-          "description": "Field definitions",
+          "description": "Fields of this event: catalog fields it uses and common fields it narrows (write {} to list a field unchanged)",
           "additionalProperties": {
-            "$ref": "field.schema.json"
+            "$ref": "field.schema.json#/definitions/eventField"
           }
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     },
     "payloadMeta": {
       "type": "object",
       "description": "Metadata about this payload version",
+      "patternProperties": {
+        "^x-": {}
+      },
       "additionalProperties": false,
       "properties": {
         "changes": {
@@ -205,9 +258,12 @@
         },
         "deprecated": {
           "type": "object",
-          "description": "Deprecation info for this payload version",
-          "additionalProperties": false,
+          "description": "Deprecation info for this payload version (deprecated versions are exempt from policy)",
           "required": ["reason"],
+          "patternProperties": {
+            "^x-": {}
+          },
+          "additionalProperties": false,
           "properties": {
             "reason": {
               "type": "string"
@@ -215,8 +271,16 @@
             "date": {
               "type": "string",
               "format": "date"
+            },
+            "x-opentp": {
+              "not": {},
+              "description": "Removed in 2026-09; see CHANGELOG.md"
             }
           }
+        },
+        "x-opentp": {
+          "not": {},
+          "description": "Removed in 2026-09; see CHANGELOG.md"
         }
       }
     }

@@ -20,8 +20,8 @@ This repo is the source of truth for the **OpenTrackPlan file format**: JSON Sch
 
 | Item | Value |
 |---|---|
-| Current spec version | `2026-09` on `main`, **not tagged yet** (`CHANGELOG.md` dates the tag 2026-10-03): every schema `$id`, `version.schema.json` `const`, every example and docs block |
-| Published tags (lightweight) | `2025-06` = `edb81d0`, `2025-12` = `b0741fd`, `2026-01` = `27b1a4c`. From `2026-09` on, tags are annotated |
+| Current spec version | `2026-09` (annotated tag at `202598b`, pushed 2026-10-03, GitHub Release "OpenTrackPlan 2026-09"): every schema `$id`, `version.schema.json` `const`, every example and docs block. Served at `https://opentp.dev/schemas/2026-09/` and `/schemas/latest/` |
+| Published tags | lightweight `2025-06` = `edb81d0`, `2025-12` = `b0741fd`, `2026-01` = `27b1a4c`; annotated `2026-09` = `202598b`. From `2026-09` on, tags are annotated |
 | Version format | `YYYY-MM` with a real month: `^[0-9]{4}-(0[1-9]\|1[0-2])$`, plus `"const": "2026-09"` in `schemas/version.schema.json` |
 | Branch / remote | `main` only; `git@github.com:opentrackplan/opentp-spec.git` (public) |
 | Toolchain | Bun `1.4.2` in CI; the checks require Bun 1.4.2 or later (`package.json` `"packageManager": "bun@1.4.2"`; older Bun cannot read `bun.lock` and `--frozen-lockfile` fails). `package.json` + `bun.lock` with `yaml` `2.8.4` (exact; the CLI's parser version). No tsconfig |
@@ -322,7 +322,6 @@ Pushing opentp-website `main` is the production deploy (Cloudflare Pages Git int
 
 ## Known issues & traps (verified 2026-10-03)
 
-- **`2026-09` is not tagged yet.** Until the tag exists and the website has a `2026-09` rule, `https://opentp.dev/schemas/2026-09/*` does not resolve, and the `latest` modelines in these docs serve the 2026-01 schemas, which reject every 2026-09 file.
 - **The schemas cannot check everything.** Closed vocabulary, inherited types (and the type-dependent keywords of event fields that inherit their type), the merge rules, presence across layers, policy, dictionaries, code-facing names and overlap are validator-only rules. `validate.ts` never merges layers, so an example can pass it and still fail the CLI: reason through the rules (or run the CLI) when you change `examples/full`.
 - **No real JSON-Schema engine in CI.** The checker implements a subset by hand; an Ajv cross-check is planned (workspace ROADMAP item 6). The schemas use only draft-07 keywords, the canonical meta-schema URI, and no `$ref` siblings, so Ajv 8 should accept them, but this is not tested.
 - **Fragments are checked by hand** (47 of 54 blocks). A fragment that is wrong but parses passes CI.
